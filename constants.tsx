@@ -9,7 +9,8 @@ import {
   Clock,
   CheckCircle2,
   AlertCircle,
-  Users as UsersIcon
+  Users as UsersIcon,
+  Gift
 } from 'lucide-react';
 import { OrderStatus } from './types';
 
@@ -24,6 +25,7 @@ export const COLORS = {
 export const NAVIGATION = [
   { name: 'Live Orders', icon: <ShoppingBag size={20} />, id: 'orders' },
   { name: 'Inventory', icon: <Package size={20} />, id: 'inventory' },
+  { name: 'Special Packages', icon: <Gift size={20} />, id: 'packages' },
   { name: 'Performance', icon: <BarChart3 size={20} />, id: 'analytics' },
   { name: 'Feedback', icon: <MessageSquare size={20} />, id: 'feedback' },
   { name: 'Users', icon: <UsersIcon size={20} />, id: 'users' },

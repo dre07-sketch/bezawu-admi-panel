@@ -97,3 +97,23 @@ export interface SystemAlert {
   level: 'LOW' | 'MEDIUM' | 'HIGH';
   time: string;
 }
+
+// New Bundle Types
+export interface BundleItem {
+  id: string;
+  bundle_id: string;
+  product_id: string;
+  product_name?: string;
+  quantity: number;
+}
+
+export interface Bundle {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  image_url: string;
+  is_active: boolean;
+  created_at: string;
+  items?: BundleItem[];
+}

@@ -6,9 +6,11 @@ import Header from './Header';
 import LiveOrders, { OrderDetailsModal } from './LiveOrders';
 import Analytics from './Analytics';
 import Inventory, { ProductDetailModal } from './Inventory';
+import { SpecialPackages } from './SpecialPackages';
 import ArrivalAlert from './ArrivalAlert';
 import AddProductModal from '../forms/AddProductModal';
 import AddCategoryModal from '../forms/AddCategoryModal';
+import AddBundleModal from '../forms/AddBundleModal';
 import Users, { CustomerDetailModal } from './Users';
 import Settings from './Settings';
 import FeedbackFeed from './FeedbackFeed';
@@ -38,6 +40,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout, isDar
   // Modal States
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
   const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
+  const [isAddBundleOpen, setIsAddBundleOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
 
@@ -83,6 +86,11 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout, isDar
           isDarkMode={isDarkMode} 
           onAddProduct={() => setIsAddProductOpen(true)}
           onSelectProduct={setSelectedProduct}
+        />;
+      case 'packages':
+        return <SpecialPackages 
+          isDarkMode={isDarkMode}
+          onAddPackage={() => setIsAddBundleOpen(true)}
         />;
       case 'analytics': return <Analytics isDarkMode={isDarkMode} />;
       case 'users': return <Users isDarkMode={isDarkMode} onSelectCustomer={setSelectedCustomer} />;
@@ -179,6 +187,13 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout, isDar
       {isAddCategoryOpen && (
         <AddCategoryModal 
           onClose={() => setIsAddCategoryOpen(false)}
+          isDarkMode={isDarkMode}
+        />
+      )}
+
+      {isAddBundleOpen && (
+        <AddBundleModal 
+          onClose={() => setIsAddBundleOpen(false)}
           isDarkMode={isDarkMode}
         />
       )}

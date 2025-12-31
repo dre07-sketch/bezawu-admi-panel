@@ -144,7 +144,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout, isDar
           onToggleTheme={onToggleTheme}
         />
         
-        <main className="flex-1 overflow-y-auto p-6 lg:p-10 custom-scrollbar">
+        {/* Fill the gap by setting pt-2 instead of py-4/6 */}
+        <main className="flex-1 overflow-y-auto px-6 pt-2 pb-8 lg:px-10 lg:pt-4 custom-scrollbar">
           {renderContent()}
         </main>
       </div>

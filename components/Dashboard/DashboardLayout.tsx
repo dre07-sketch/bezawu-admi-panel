@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { User, Order, OrderStatus, Customer } from '../../types';
+import { User, Order, OrderStatus, Customer, BranchStatus, GridStatus } from '../../types';
 import Sidebar from './Sidebar';
 import Header from './Header';
 import LiveOrders, { OrderDetailsModal } from './LiveOrders';
@@ -12,6 +12,9 @@ import AddCategoryModal from '../forms/AddCategoryModal';
 import Users, { CustomerDetailModal } from './Users';
 import Settings from './Settings';
 import FeedbackFeed from './FeedbackFeed';
+import GlobalTermination from './GlobalTermination';
+import BranchOffline from './BranchOffline';
+import OmniLockdown from './OmniLockdown';
 import { mockOrders } from '../../services/mockData';
 
 interface DashboardLayoutProps {
@@ -28,6 +31,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout, isDar
   const [arrivedOrder, setArrivedOrder] = useState<Order | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   
+  // Status Management
+  const [gridStatus, setGridStatus] = useState<GridStatus>(GridStatus.ONLINE);
+  const [branchStatus, setBranchStatus] = useState<BranchStatus>(BranchStatus.ACTIVE);
+  
   // Modal States
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
   const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
@@ -35,6 +42,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout, isDar
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
 
   useEffect(() => {
+    if (gridStatus !== GridStatus.ONLINE || branchStatus === BranchStatus.SHUTDOWN) return;
+
     const timer = setInterval(() => {
       const pendingOrder = orders.find(o => o.status === OrderStatus.READY);
       if (pendingOrder && !arrivedOrder) {
@@ -46,7 +55,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout, isDar
       }
     }, 15000);
     return () => clearInterval(timer);
-  }, [orders, arrivedOrder]);
+  }, [orders, arrivedOrder, gridStatus, branchStatus]);
 
   const handleUpdateStatus = (orderId: string, nextStatus: OrderStatus) => {
     setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: nextStatus } : o));
@@ -77,10 +86,37 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout, isDar
         />;
       case 'analytics': return <Analytics isDarkMode={isDarkMode} />;
       case 'users': return <Users isDarkMode={isDarkMode} onSelectCustomer={setSelectedCustomer} />;
-      case 'settings': return <Settings isDarkMode={isDarkMode} isBusy={isBusy} onToggleBusy={() => setIsBusy(!isBusy)} />;
+      case 'settings': return <Settings 
+          isDarkMode={isDarkMode} 
+          isBusy={isBusy} 
+          onToggleBusy={() => setIsBusy(!isBusy)} 
+          onShutdownBranch={() => setBranchStatus(BranchStatus.SHUTDOWN)}
+          onShutdownGrid={() => setGridStatus(GridStatus.DARK)}
+          onOmniShutdown={() => setGridStatus(GridStatus.OMNI_DARK)}
+        />;
       default: return <LiveOrders orders={orders} onUpdateStatus={handleUpdateStatus} onSelectOrder={setSelectedOrder} isDarkMode={isDarkMode} />;
     }
   };
+
+  // Handle Shutdown States
+  if (gridStatus === GridStatus.OMNI_DARK) {
+    return <OmniLockdown onRestore={() => setGridStatus(GridStatus.ONLINE)} />;
+  }
+
+  if (gridStatus === GridStatus.DARK) {
+    return <GlobalTermination onRestore={() => setGridStatus(GridStatus.ONLINE)} />;
+  }
+
+  if (branchStatus === BranchStatus.SHUTDOWN) {
+    return (
+      <div className={`flex h-screen w-screen overflow-hidden ${isDarkMode ? 'bg-[#0f1115]' : 'bg-slate-50'}`}>
+        <Sidebar activeTab={activeTab} onTabChange={setActiveTab} onLogout={onLogout} isDarkMode={isDarkMode} />
+        <div className="flex-1 relative">
+           <BranchOffline branchName={user.branchName} onRestore={() => setBranchStatus(BranchStatus.ACTIVE)} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`flex h-screen w-screen overflow-hidden relative ${isDarkMode ? 'bg-[#0f1115]' : 'bg-slate-50'}`}>
@@ -105,7 +141,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout, isDar
         </main>
       </div>
 
-      {/* Global Modals - Rendered at root level to ensure they cover Header/Sidebar */}
+      {/* Global Modals */}
       {selectedOrder && (
         <OrderDetailsModal 
           order={selectedOrder}

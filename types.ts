@@ -8,6 +8,17 @@ export enum OrderStatus {
   CANCELLED = 'CANCELLED'
 }
 
+export enum BranchStatus {
+  ACTIVE = 'ACTIVE',
+  SHUTDOWN = 'SHUTDOWN'
+}
+
+export enum GridStatus {
+  ONLINE = 'ONLINE',
+  DARK = 'DARK',
+  OMNI_DARK = 'OMNI_DARK'
+}
+
 export interface CarInfo {
   model: string;
   color: string;

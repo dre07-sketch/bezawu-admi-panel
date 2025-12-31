@@ -1,19 +1,23 @@
 
 import React, { useState } from 'react';
 import { 
-  Shield, Lock, Bell, Volume2, HardDrive, 
+  Shield, Bell, Volume2, HardDrive, 
   Activity, Clock, Users, Eye, EyeOff, 
   CheckCircle2, AlertOctagon, Save, Mail,
-  Zap, VolumeX, CheckSquare, Settings as SettingsIcon
+  Zap, VolumeX, CheckSquare, Settings as SettingsIcon,
+  Power, ZapOff, Orbit
 } from 'lucide-react';
 
 interface SettingsProps {
   isDarkMode: boolean;
   isBusy: boolean;
   onToggleBusy: () => void;
+  onShutdownBranch: () => void;
+  onShutdownGrid: () => void;
+  onOmniShutdown?: () => void;
 }
 
-const Settings: React.FC<SettingsProps> = ({ isDarkMode, isBusy, onToggleBusy }) => {
+const Settings: React.FC<SettingsProps> = ({ isDarkMode, isBusy, onToggleBusy, onShutdownBranch, onShutdownGrid, onOmniShutdown }) => {
   const [showPass, setShowPass] = useState(false);
   const [password, setPassword] = useState('');
   const [email, setEmail] = useState('abebe@bezaw.com');
@@ -122,7 +126,6 @@ const Settings: React.FC<SettingsProps> = ({ isDarkMode, isBusy, onToggleBusy })
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-4">
-                {/* Auto Accept Toggle */}
                 <div className={`flex items-center justify-between p-5 rounded-2xl border ${isDarkMode ? 'bg-slate-900/50 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
                   <div className="flex items-center gap-3">
                     <CheckSquare size={18} className={config.autoAccept ? "text-green-500" : "text-slate-500"} />
@@ -136,7 +139,6 @@ const Settings: React.FC<SettingsProps> = ({ isDarkMode, isBusy, onToggleBusy })
                   </button>
                 </div>
 
-                {/* Sound Alerts Toggle */}
                 <div className={`flex items-center justify-between p-5 rounded-2xl border ${isDarkMode ? 'bg-slate-900/50 border-slate-800' : 'bg-slate-50 border-slate-200'}`}>
                   <div className="flex items-center gap-3">
                     {config.soundAlerts ? <Volume2 size={18} className="text-blue-500" /> : <VolumeX size={18} className="text-slate-500" />}
@@ -164,19 +166,13 @@ const Settings: React.FC<SettingsProps> = ({ isDarkMode, isBusy, onToggleBusy })
                     onChange={(e) => setConfig({...config, capacity: parseInt(e.target.value)})}
                   />
                 </div>
-                
-                <div className={`p-4 rounded-xl border border-dashed ${isDarkMode ? 'bg-slate-800/10 border-slate-800' : 'bg-slate-100 border-slate-200'}`}>
-                   <p className="text-[9px] text-slate-500 font-bold uppercase tracking-[0.2em] leading-relaxed">
-                     Throttling will engage if capacity exceeds 90%. System priority is given to pre-paid orders.
-                   </p>
-                </div>
               </div>
             </div>
           </section>
         </div>
 
         <div className="space-y-8">
-           {/* Replaced Lockdown with Busy/Live Toggle Section */}
+           {/* System Status & Shutdown Controls */}
            <section className={`p-8 rounded-[2.5rem] border transition-all duration-500 flex flex-col items-center text-center ${
              isBusy 
                ? 'border-red-500 bg-red-500/10 shadow-lg shadow-red-500/10' 
@@ -205,6 +201,42 @@ const Settings: React.FC<SettingsProps> = ({ isDarkMode, isBusy, onToggleBusy })
             >
               {isBusy ? 'Resume Live Mode' : 'Switch to Busy Mode'}
             </button>
+          </section>
+
+          {/* Strategic Shutdown Actions */}
+          <section className="space-y-4">
+             <button 
+               onClick={onShutdownBranch}
+               className="w-full p-6 rounded-[2rem] border border-amber-500/30 bg-amber-500/5 hover:bg-amber-500/10 transition-all flex items-center justify-between group"
+             >
+               <div className="text-left">
+                 <p className="text-amber-500 font-black text-[10px] uppercase tracking-widest mb-1">Decommission Node</p>
+                 <p className="text-slate-500 text-[11px] font-bold">Shut down this specific branch</p>
+               </div>
+               <Power className="text-amber-500 group-hover:scale-110 transition-transform" />
+             </button>
+
+             <button 
+               onClick={onShutdownGrid}
+               className="w-full p-6 rounded-[2rem] border border-rose-500/30 bg-rose-500/5 hover:bg-rose-500/10 transition-all flex items-center justify-between group"
+             >
+               <div className="text-left">
+                 <p className="text-rose-500 font-black text-[10px] uppercase tracking-widest mb-1">Grid Dark Protocol</p>
+                 <p className="text-slate-500 text-[11px] font-bold">Total organization shutdown</p>
+               </div>
+               <ZapOff className="text-rose-500 group-hover:scale-110 transition-transform" />
+             </button>
+
+             <button 
+               onClick={onOmniShutdown}
+               className="w-full p-6 rounded-[2rem] border border-cyan-500/30 bg-cyan-500/5 hover:bg-cyan-900/10 transition-all flex items-center justify-between group"
+             >
+               <div className="text-left">
+                 <p className="text-cyan-500 font-black text-[10px] uppercase tracking-widest mb-1">Eclipse Protocol</p>
+                 <p className="text-slate-500 text-[11px] font-bold">All branches synchronized standby</p>
+               </div>
+               <Orbit className="text-cyan-500 group-hover:rotate-90 transition-transform duration-700" />
+             </button>
           </section>
 
           <section className={`p-8 rounded-[2.5rem] border transition-all ${isDarkMode ? 'bg-[#121418] border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>

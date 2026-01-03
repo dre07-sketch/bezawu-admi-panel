@@ -22,12 +22,16 @@ router.get('/dashboard-stats', authMiddleware, async (req, res) => {
         // 1. KPI Stats
         const kpiQuery = `
             SELECT 
-                COALESCE(SUM(o.total_price), 0) as "totalRevenue",
+                COALESCE(SUM(CASE WHEN o.status = 'COMPLETED' THEN o.total_price ELSE 0 END), 0) as "totalRevenue",
                 COUNT(o.id) as "totalOrders",
                 COALESCE(AVG(f.rating), 0) as "avgRating"
             FROM orders o
             LEFT JOIN branches b ON o.branch_id = b.id
-            LEFT JOIN feedback f ON o.id = f.order_id
+            LEFT JOIN (
+                SELECT order_id, AVG(rating) as rating 
+                FROM feedback 
+                GROUP BY order_id
+            ) f ON o.id = f.order_id
             WHERE ${filterClause}
         `;
         const kpiResult = await query(kpiQuery, params);
@@ -38,11 +42,15 @@ router.get('/dashboard-stats', authMiddleware, async (req, res) => {
             SELECT 
                 TO_CHAR(o.created_at, 'HH24:00') as time,
                 COUNT(o.id) as orders,
-                COALESCE(SUM(o.total_price), 0) as revenue,
+                COALESCE(SUM(CASE WHEN o.status = 'COMPLETED' THEN o.total_price ELSE 0 END), 0) as revenue,
                 COALESCE(AVG(f.rating), 0) as rating
             FROM orders o
             LEFT JOIN branches b ON o.branch_id = b.id
-            LEFT JOIN feedback f ON o.id = f.order_id
+            LEFT JOIN (
+                SELECT order_id, AVG(rating) as rating 
+                FROM feedback 
+                GROUP BY order_id
+            ) f ON o.id = f.order_id
             WHERE ${filterClause} AND o.created_at >= NOW() - INTERVAL '24 hours'
             GROUP BY TO_CHAR(o.created_at, 'HH24:00')
             ORDER BY time

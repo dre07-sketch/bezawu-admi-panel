@@ -31,7 +31,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ onClose, onAddCategor
                 const headers = { 'Authorization': `Bearer ${token}` };
 
                 // Fetch categories
-                const catRes = await fetch('http://localhost:5000/api/categories', { headers });
+                const catRes = await fetch('http://localhost:5000/api/categories/categories-get', { headers });
                 if (catRes.ok) {
                     const catData = await catRes.json();
                     setCategories(catData);

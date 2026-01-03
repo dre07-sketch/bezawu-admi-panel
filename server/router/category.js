@@ -4,7 +4,7 @@ const { query } = require('../connection/db');
 const authMiddleware = require('../middleware/auth');
 
 // Get all categories (filtered by user's supermarket/branch)
-router.get('/', authMiddleware, async (req, res) => {
+router.get('/categories-get', authMiddleware, async (req, res) => {
     try {
         const branch_id = req.user.branchId;
         const supermarket_id = req.user.supermarketId;
@@ -29,7 +29,7 @@ router.get('/', authMiddleware, async (req, res) => {
 });
 
 // Create a new category
-router.post('/', authMiddleware, async (req, res) => {
+router.post('/categories-post', authMiddleware, async (req, res) => {
     const { name } = req.body;
     const branch_id = req.user.branchId;
     const supermarket_id = req.user.supermarketId;

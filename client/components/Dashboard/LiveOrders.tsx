@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Order, OrderStatus } from '../../types';
 import { STATUS_MAP } from '../../constants';
-import { ExternalLink, User as UserIcon, Package, X, Phone, CreditCard, Clock, Loader2, Sparkles } from 'lucide-react';
+import { ExternalLink, User as UserIcon, Package, X, Phone, CreditCard, Clock, Loader2, Sparkles, Search, CheckCircle } from 'lucide-react';
 import { playNotificationSound } from '../../services/soundService';
+import FulfillmentView from '../FulfillmentView';
+import { QrCode, MessageSquare } from 'lucide-react';
+import ChatModal from './ChatModal';
 
 interface LiveOrdersProps {
   onUpdateStatus?: (id: string, status: OrderStatus) => void;
@@ -11,10 +14,40 @@ interface LiveOrdersProps {
   isDarkMode: boolean;
 }
 
+const formatDuration = (seconds: number) => {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
+
+const HandoverTimer = ({ start }: { start: string }) => {
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    const startDate = new Date(start).getTime();
+    const update = () => {
+      const now = new Date().getTime();
+      setElapsed(Math.max(0, (now - startDate) / 1000));
+    };
+    update();
+    const interval = setInterval(update, 1000);
+    return () => clearInterval(interval);
+  }, [start]);
+
+  return <span className="font-mono">{formatDuration(elapsed)}</span>;
+};
+
 export const LiveOrders: React.FC<LiveOrdersProps> = ({ isDarkMode, onUpdateStatus, onRefresh, onSelectOrder }) => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showCompleted, setShowCompleted] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState<OrderStatus | null>(null);
+  const [showAll, setShowAll] = useState(false);
+  const [isFulfillmentActive, setIsFulfillmentActive] = useState(false);
+  const [fulfillmentOrder, setFulfillmentOrder] = useState<Order | null>(null);
+  const [selectedChatOrder, setSelectedChatOrder] = useState<Order | null>(null);
   const prevOrderIds = useRef<Set<string>>(new Set());
 
   const fetchOrders = async () => {
@@ -91,6 +124,24 @@ export const LiveOrders: React.FC<LiveOrdersProps> = ({ isDarkMode, onUpdateStat
     { label: 'Arrived', status: OrderStatus.ARRIVED },
   ];
 
+  const filteredOrders = orders.filter(order => {
+    const searchLower = searchQuery.toLowerCase();
+    const matchesSearch = order.id.toLowerCase().includes(searchLower) ||
+      order.customerName.toLowerCase().includes(searchLower);
+
+    // Filter by completion status
+    let matchesStatus = false;
+    if (showAll) {
+      matchesStatus = true;
+    } else if (showCompleted) {
+      matchesStatus = order.status === OrderStatus.COMPLETED;
+    } else {
+      matchesStatus = (order.status !== OrderStatus.COMPLETED && (!selectedStatus || order.status === selectedStatus));
+    }
+
+    return matchesSearch && matchesStatus;
+  });
+
   if (loading) {
     return <div className="flex items-center justify-center p-20 min-h-[400px]">
       <div className="flex flex-col items-center gap-4">
@@ -100,35 +151,129 @@ export const LiveOrders: React.FC<LiveOrdersProps> = ({ isDarkMode, onUpdateStat
     </div>;
   }
 
+  if (isFulfillmentActive) {
+    return (
+      <FulfillmentView
+        order={fulfillmentOrder}
+        onBack={() => {
+          setIsFulfillmentActive(false);
+          setFulfillmentOrder(null);
+        }}
+        onUpdateStatus={handleUpdateStatus}
+        onOpenChat={(order) => {
+          setSelectedChatOrder(order);
+        }}
+        isDarkMode={isDarkMode}
+      />
+    );
+  }
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center justify-between w-full">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between w-full gap-4">
           <div>
             <h1 className={`text-2xl font-bold tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Active Operations</h1>
             <p className={`${isDarkMode ? 'text-slate-500' : 'text-slate-400'} text-sm mt-1`}>Real-time drive-through fulfillment queue</p>
           </div>
-          <button
-            onClick={fetchOrders}
-            className={`border px-4 py-2.5 rounded-xl flex items-center gap-2 transition-all ${isDarkMode ? 'bg-[#121418] border-slate-800 text-slate-400 hover:text-white' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
-              }`}
-          >
-            <Sparkles size={18} className="text-emerald-500" />
-            REFRESH
-          </button>
+
+          <div className="flex items-center gap-3">
+            <div className={`relative flex items-center ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+              <Search className="absolute left-3 text-slate-500" size={16} />
+              <input
+                type="text"
+                placeholder="Search order or name..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className={`pl-10 pr-4 py-2.5 rounded-xl border text-sm font-bold w-64 transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500/20 ${isDarkMode
+                  ? 'bg-[#121418] border-slate-800 placeholder:text-slate-600 focus:border-emerald-500'
+                  : 'bg-white border-slate-200 placeholder:text-slate-400 focus:border-emerald-500'
+                  }`}
+              />
+            </div>
+
+            <button
+              onClick={fetchOrders}
+              className={`border px-4 py-2.5 rounded-xl flex items-center gap-2 transition-all ${isDarkMode ? 'bg-[#121418] border-slate-800 text-slate-400 hover:text-white' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                }`}
+            >
+              <Sparkles size={18} className="text-emerald-500" />
+            </button>
+
+            
+          </div>
         </div>
       </div>
 
       <div className="flex flex-wrap gap-2">
-        {categories.map((cat) => (
-          <div key={cat.label} className={`border px-4 py-1.5 rounded-lg transition-colors flex items-center gap-3 ${isDarkMode ? 'bg-slate-800/50 border-slate-800' : 'bg-white border-slate-200 shadow-sm'
+        <button
+          onClick={() => {
+            setShowAll(!showAll);
+            setShowCompleted(false);
+            setSelectedStatus(null);
+          }}
+          className={`border px-4 py-2 rounded-xl transition-all flex items-center gap-3 shadow-sm active:scale-95 ${showAll
+            ? 'bg-slate-900 border-slate-900 text-white shadow-slate-900/20 shadow-lg'
+            : isDarkMode
+              ? 'bg-slate-800/50 border-slate-800 hover:bg-slate-800'
+              : 'bg-white border-slate-200 hover:bg-slate-50'
+            }`}
+        >
+          <span className={`text-[10px] font-bold uppercase tracking-widest ${showAll ? 'text-white' : (isDarkMode ? 'text-slate-500' : 'text-slate-400')}`}>All</span>
+          <div className={`px-2 py-0.5 rounded-md text-xs font-bold ${showAll
+            ? 'bg-white/20 text-white'
+            : isDarkMode ? 'bg-slate-700 text-white' : 'bg-slate-100 text-slate-900'
             }`}>
-            <span className={`text-[10px] font-bold uppercase tracking-widest ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>{cat.label}</span>
-            <span className={`text-sm font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-              {orders.filter(o => o.status === cat.status).length}
-            </span>
+            {orders.length}
           </div>
+        </button>
+
+        {categories.map((cat) => (
+          <button
+            key={cat.label}
+            onClick={() => {
+              setShowAll(false);
+              if (showCompleted) setShowCompleted(false);
+              setSelectedStatus(selectedStatus === cat.status ? null : cat.status);
+            }}
+            className={`border px-4 py-2 rounded-xl transition-all flex items-center gap-3 shadow-sm active:scale-95 ${selectedStatus === cat.status
+              ? 'bg-emerald-500 border-emerald-500 text-white shadow-emerald-500/20 shadow-lg'
+              : isDarkMode
+                ? 'bg-slate-800/50 border-slate-800 hover:bg-slate-800'
+                : 'bg-white border-slate-200 hover:bg-slate-50'
+              }`}
+          >
+            <span className={`text-[10px] font-bold uppercase tracking-widest ${selectedStatus === cat.status ? 'text-white' : (isDarkMode ? 'text-slate-500' : 'text-slate-400')}`}>{cat.label}</span>
+            <div className={`px-2 py-0.5 rounded-md text-xs font-bold ${selectedStatus === cat.status
+              ? 'bg-white/20 text-white'
+              : isDarkMode ? 'bg-slate-700 text-white' : 'bg-slate-100 text-slate-900'
+              }`}>
+              {orders.filter(o => o.status === cat.status).length}
+            </div>
+          </button>
         ))}
+
+        <button
+          onClick={() => {
+            setShowAll(false);
+            setShowCompleted(!showCompleted);
+            if (!showCompleted) setSelectedStatus(null);
+          }}
+          className={`border px-4 py-2 rounded-xl transition-all flex items-center gap-3 shadow-sm active:scale-95 ${showCompleted
+            ? 'bg-emerald-600 border-emerald-600 text-white shadow-emerald-600/20 shadow-lg'
+            : isDarkMode
+              ? 'bg-slate-800/50 border-slate-800 hover:bg-slate-800'
+              : 'bg-white border-slate-200 hover:bg-slate-50'
+            }`}
+        >
+          <span className={`text-[10px] font-bold uppercase tracking-widest ${showCompleted ? 'text-white' : (isDarkMode ? 'text-slate-500' : 'text-slate-400')}`}>Completed</span>
+          <div className={`px-2 py-0.5 rounded-md text-xs font-bold ${showCompleted
+            ? 'bg-white/20 text-white'
+            : isDarkMode ? 'bg-slate-700 text-white' : 'bg-slate-100 text-slate-900'
+            }`}>
+            {orders.filter(o => o.status === OrderStatus.COMPLETED).length}
+          </div>
+        </button>
       </div>
 
       <div className={`border rounded-2xl overflow-hidden ${isDarkMode ? 'bg-[#121418] border-slate-800' : 'bg-white border-slate-200 shadow-sm'}`}>
@@ -145,7 +290,7 @@ export const LiveOrders: React.FC<LiveOrdersProps> = ({ isDarkMode, onUpdateStat
               </tr>
             </thead>
             <tbody className={`divide-y ${isDarkMode ? 'divide-slate-800' : 'divide-slate-100'}`}>
-              {orders.length === 0 ? (
+              {filteredOrders.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-20 text-center">
                     <div className="flex flex-col items-center gap-4">
@@ -153,14 +298,14 @@ export const LiveOrders: React.FC<LiveOrdersProps> = ({ isDarkMode, onUpdateStat
                         <Package size={40} className="text-slate-400" />
                       </div>
                       <div>
-                        <p className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>No active orders</p>
-                        <p className="text-sm text-slate-500 mt-1">New incoming orders will appear here automatically.</p>
+                        <p className={`text-lg font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>No active orders found</p>
+                        <p className="text-sm text-slate-500 mt-1">Try adjusting your filters or waiting for new orders.</p>
                       </div>
                     </div>
                   </td>
                 </tr>
               ) : (
-                orders.map((order) => (
+                filteredOrders.map((order) => (
                   <tr key={order.id} className={`group transition-colors ${isDarkMode ? 'hover:bg-slate-800/30' : 'hover:bg-slate-50'}`}>
                     <td className="px-6 py-5">
                       <div className="flex items-center gap-3">
@@ -188,12 +333,26 @@ export const LiveOrders: React.FC<LiveOrdersProps> = ({ isDarkMode, onUpdateStat
                       </div>
                     </td>
                     <td className="px-6 py-5">
-                      <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${(order.status && STATUS_MAP[order.status as OrderStatus])
-                        ? `${STATUS_MAP[order.status as OrderStatus].color.replace('text', 'bg').replace('400', '500')} bg-opacity-10 ${STATUS_MAP[order.status as OrderStatus].color}`
-                        : 'bg-slate-500/10 text-slate-500'
-                        }`}>
-                        {(order.status && STATUS_MAP[order.status as OrderStatus]) ? STATUS_MAP[order.status as OrderStatus].icon : <Clock size={16} />}
-                        {(order.status && STATUS_MAP[order.status as OrderStatus]) ? STATUS_MAP[order.status as OrderStatus].label : order.status || 'Unknown'}
+                      <div className="flex flex-col gap-1.5 items-start">
+                        <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${(order.status && STATUS_MAP[order.status as OrderStatus])
+                          ? `${STATUS_MAP[order.status as OrderStatus].color.replace('text', 'bg').replace('400', '500')} bg-opacity-10 ${STATUS_MAP[order.status as OrderStatus].color}`
+                          : 'bg-slate-500/10 text-slate-500'
+                          }`}>
+                          {(order.status && STATUS_MAP[order.status as OrderStatus]) ? STATUS_MAP[order.status as OrderStatus].icon : <Clock size={16} />}
+                          {(order.status && STATUS_MAP[order.status as OrderStatus]) ? STATUS_MAP[order.status as OrderStatus].label : order.status || 'Unknown'}
+                        </div>
+                        {order.status === OrderStatus.ARRIVED && order.arrivedAt && (
+                          <div className="text-xs font-bold text-orange-500 flex items-center gap-1 animate-pulse px-1">
+                            <Clock size={12} />
+                            <HandoverTimer start={order.arrivedAt} />
+                          </div>
+                        )}
+                        {(['COMPLETED', 'VERIFIED', 'GIVEN'].includes(order.status) && order.handoverTimeSeconds) && (
+                          <div className="text-xs font-bold text-emerald-500 flex items-center gap-1 px-1">
+                            <Clock size={12} />
+                            <span>{formatDuration(order.handoverTimeSeconds)}</span>
+                          </div>
+                        )}
                       </div>
                     </td>
                     <td className="px-6 py-5">
@@ -201,6 +360,13 @@ export const LiveOrders: React.FC<LiveOrdersProps> = ({ isDarkMode, onUpdateStat
                     </td>
                     <td className="px-6 py-5 text-right">
                       <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => setSelectedChatOrder(order)}
+                          className={`p-2 rounded-lg transition-all ${isDarkMode ? 'bg-slate-800 text-indigo-400 hover:bg-slate-700' : 'bg-slate-100 text-indigo-500 hover:bg-slate-200'}`}
+                          title="Chat with Customer"
+                        >
+                          <MessageSquare size={16} />
+                        </button>
                         <button onClick={() => setSelectedOrder(order)} className={`p-2 rounded-lg transition-all ${isDarkMode ? 'bg-slate-800 text-slate-400 hover:text-white' : 'bg-slate-100 text-slate-500 hover:text-slate-900'}`}>
                           <ExternalLink size={16} />
                         </button>
@@ -224,19 +390,44 @@ export const LiveOrders: React.FC<LiveOrdersProps> = ({ isDarkMode, onUpdateStat
         </div>
       </div>
 
-      {selectedOrder && (
-        <OrderDetailsModal
-          order={selectedOrder}
-          onClose={() => setSelectedOrder(null)}
-          onUpdateStatus={(status) => handleUpdateStatus(selectedOrder.id, status)}
+      {
+        selectedOrder && (
+          <OrderDetailsModal
+            order={selectedOrder}
+            onClose={() => setSelectedOrder(null)}
+            onUpdateStatus={(status) => handleUpdateStatus(selectedOrder.id, status)}
+            onOpenFulfillment={(order) => {
+              setFulfillmentOrder(order);
+              setIsFulfillmentActive(true);
+              setSelectedOrder(null);
+            }}
+            onOpenChat={(order) => {
+              setSelectedChatOrder(order);
+            }}
+            isDarkMode={isDarkMode}
+          />
+        )
+      }
+
+      {selectedChatOrder && (
+        <ChatModal
+          order={selectedChatOrder}
+          onClose={() => setSelectedChatOrder(null)}
           isDarkMode={isDarkMode}
         />
       )}
-    </div>
+    </div >
   );
 };
 
-export const OrderDetailsModal: React.FC<{ order: Order, onClose: () => void, onUpdateStatus: (status: OrderStatus) => void, isDarkMode: boolean }> = ({ order, onClose, onUpdateStatus, isDarkMode }) => {
+export const OrderDetailsModal: React.FC<{
+  order: Order,
+  onClose: () => void,
+  onUpdateStatus: (status: OrderStatus) => void,
+  onOpenFulfillment: (order: Order) => void,
+  onOpenChat: (order: Order) => void,
+  isDarkMode: boolean
+}> = ({ order, onClose, onUpdateStatus, onOpenFulfillment, onOpenChat, isDarkMode }) => {
   return (
     <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/15 backdrop-blur-sm animate-in fade-in duration-300">
       <div className={`max-w-4xl w-full rounded-[2.5rem] overflow-hidden shadow-2xl transition-all border animate-in zoom-in-95 duration-200 ${isDarkMode ? 'bg-[#121418] border-slate-800' : 'bg-white border-slate-100'
@@ -288,12 +479,27 @@ export const OrderDetailsModal: React.FC<{ order: Order, onClose: () => void, on
                 <div className={`rounded-[2rem] border overflow-hidden transition-colors ${isDarkMode ? 'bg-[#0f1115] border-slate-800' : 'bg-white border-slate-200'}`}>
                   <div className="divide-y divide-slate-200/50">
                     {order.items.map((item) => (
-                      <div key={item.id} className="p-5 flex items-center justify-between group">
-                        <div className="flex items-center gap-4">
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xs font-bold border ${isDarkMode ? 'bg-slate-800 border-slate-700 text-slate-400' : 'bg-slate-50 border-slate-100 text-slate-600'}`}>{item.quantity}x</div>
-                          <span className={`text-sm font-semibold ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>{item.name}</span>
+                      <div key={item.id} className={`p-5 hover:bg-slate-50/50 transition-colors ${isDarkMode ? 'hover:bg-slate-800/50' : ''}`}>
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start gap-4">
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xs font-bold border flex-shrink-0 ${isDarkMode ? 'bg-slate-800 border-slate-700 text-slate-400' : 'bg-slate-50 border-slate-100 text-slate-600'}`}>{item.quantity}x</div>
+                            <div>
+                              <span className={`text-sm font-semibold block ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>{item.name}</span>
+                              {item.bundleItems && item.bundleItems.length > 0 && (
+                                <div className="mt-1.5 flex flex-col gap-1">
+                                  {item.bundleItems.map((bItem, idx) => (
+                                    <span key={idx} className="text-[10px] text-slate-400 font-medium flex items-center gap-1.5">
+                                      <span className={`w-1 h-1 rounded-full ${isDarkMode ? 'bg-slate-600' : 'bg-slate-300'}`}></span>
+                                      {bItem.quantity > 1 && <span className={isDarkMode ? 'text-slate-300' : 'text-slate-600'}>{bItem.quantity}x </span>}
+                                      {bItem.name}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <span className="text-sm font-bold text-slate-400 whitespace-nowrap">{item.price} ETB</span>
                         </div>
-                        <span className="text-sm font-bold text-slate-400">{item.price} ETB</span>
                       </div>
                     ))}
                   </div>
@@ -325,6 +531,13 @@ export const OrderDetailsModal: React.FC<{ order: Order, onClose: () => void, on
             )}
           </div>
           <div className="flex gap-4">
+            <button
+              onClick={() => onOpenChat(order)}
+              className={`p-4 rounded-2xl flex items-center justify-center transition-all ${isDarkMode ? 'bg-slate-800 text-indigo-500 hover:bg-slate-700' : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'}`}
+              title="Chat with Customer"
+            >
+              <MessageSquare size={20} />
+            </button>
             <button onClick={onClose} className={`px-10 py-4 rounded-2xl text-sm font-bold transition-all ${isDarkMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-[#e2e8f0] text-[#475569] hover:bg-[#cbd5e1]'}`}>Close</button>
             {order.status === OrderStatus.PENDING && (
               <button onClick={() => { onUpdateStatus(OrderStatus.PREPARING); onClose(); }} className="bg-green-500 hover:bg-green-600 text-white text-sm font-bold px-12 py-4 rounded-2xl transition-all shadow-lg shadow-green-500/20 active:scale-95">Start Picking</button>

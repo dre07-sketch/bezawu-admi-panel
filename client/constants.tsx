@@ -10,7 +10,9 @@ import {
   CheckCircle2,
   AlertCircle,
   Users as UsersIcon,
-  Gift
+  Gift,
+  Film,
+  Image as ImageIcon
 } from 'lucide-react';
 import { OrderStatus } from './types';
 
@@ -26,6 +28,8 @@ export const NAVIGATION = [
   { name: 'Live Orders', icon: <ShoppingBag size={20} />, id: 'orders' },
   { name: 'Inventory', icon: <Package size={20} />, id: 'inventory' },
   { name: 'Special Packages', icon: <Gift size={20} />, id: 'packages' },
+  { name: 'App Stories', icon: <Film size={20} />, id: 'stories' },
+  { name: 'App Ads', icon: <ImageIcon size={20} />, id: 'ads' },
   { name: 'Performance', icon: <BarChart3 size={20} />, id: 'analytics' },
   { name: 'Feedback', icon: <MessageSquare size={20} />, id: 'feedback' },
   { name: 'Users', icon: <UsersIcon size={20} />, id: 'users' },

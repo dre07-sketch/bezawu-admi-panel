@@ -17,7 +17,14 @@ import Settings from '../Dashboard/Settings';
 import FeedbackFeed from '../Dashboard/FeedbackFeed';
 import GlobalTermination from '../../shutdown/GlobalTermination';
 import BranchOffline from '../Dashboard/BranchOffline';
+
 import OmniLockdown from '../../shutdown/OmniLockdown';
+import Ads from '../Dashboard/Ads';
+import AddAdModal from '../forms/AddAdModal';
+import Stories from '../Dashboard/Stories';
+import AddStoryModal from '../forms/AddStoryModal';
+
+// ... other imports ...
 
 
 interface DashboardLayoutProps {
@@ -62,7 +69,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout, isDar
   // Modal States
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
   const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
+
   const [isAddBundleOpen, setIsAddBundleOpen] = useState(false);
+  const [isAddStoryOpen, setIsAddStoryOpen] = useState(false);
+  const [isAddAdOpen, setIsAddAdOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
 
@@ -140,7 +150,18 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout, isDar
       case 'packages':
         return <SpecialPackages
           isDarkMode={isDarkMode}
+
           onAddPackage={() => setIsAddBundleOpen(true)}
+        />;
+      case 'stories':
+        return <Stories
+          isDarkMode={isDarkMode}
+          onAddStory={() => setIsAddStoryOpen(true)}
+        />;
+      case 'ads':
+        return <Ads
+          isDarkMode={isDarkMode}
+          onAddAd={() => setIsAddAdOpen(true)}
         />;
       case 'analytics': return <Analytics isDarkMode={isDarkMode} />;
       case 'users': return <Users isDarkMode={isDarkMode} onSelectCustomer={setSelectedCustomer} />;
@@ -254,6 +275,21 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout, isDar
         <ProductDetailModal
           product={selectedProduct}
           onClose={() => setSelectedProduct(null)}
+          isDarkMode={isDarkMode}
+        />
+      )}
+
+      {isAddStoryOpen && (
+        <AddStoryModal
+          onClose={() => setIsAddStoryOpen(false)}
+          isDarkMode={isDarkMode}
+        />
+      )}
+
+      {isAddAdOpen && (
+        <AddAdModal
+          isOpen={isAddAdOpen}
+          onClose={() => setIsAddAdOpen(false)}
           isDarkMode={isDarkMode}
         />
       )}

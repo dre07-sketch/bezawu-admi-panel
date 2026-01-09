@@ -37,9 +37,13 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/bundles', bundlesRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/analytics', require('./router/analytics'));
+app.use('/api/system', require('./router/system'));
 app.use('/api/feedback', require('./router/feedback'));
 app.use('/api/users', require('./router/user'));
 app.use('/api/settings', require('./router/setting'));
+app.use('/api/stories', require('./router/stories'));
+app.use('/api/ads', require('./router/ads'));
+app.use('/api/chat', require('./router/chat'));
 
 
 

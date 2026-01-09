@@ -67,8 +67,8 @@ const AddCategoryModal: React.FC<AddCategoryModalProps> = ({ onClose, isDarkMode
                             type="text"
                             placeholder="e.g., Premium Beverages"
                             className={`w-full p-4 rounded-2xl border transition-all font-bold ${isDarkMode
-                                    ? 'bg-[#0a0c10] border-slate-800 text-white focus:border-cyan-500/50'
-                                    : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-cyan-500/50'
+                                ? 'bg-[#0a0c10] border-slate-800 text-white focus:border-cyan-500/50'
+                                : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-cyan-500/50'
                                 }`}
                             value={name}
                             onChange={(e) => setName(e.target.value)}

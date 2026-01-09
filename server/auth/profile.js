@@ -15,8 +15,11 @@ router.get('/me', authMiddleware, async (req, res) => {
                 m.branch_id,
                 b.name as branch_name,
                 b.is_busy,
+                b.status as branch_status,
                 s.id as supermarket_id,
-                s.name as supermarket_name
+                s.name as supermarket_name,
+                s.status as supermarket_status,
+                (SELECT COUNT(*) FROM branches WHERE supermarket_id = s.id) as branch_count
             FROM managers m
             LEFT JOIN branches b ON m.branch_id = b.id
             LEFT JOIN supermarkets s ON b.supermarket_id = s.id
@@ -37,8 +40,11 @@ router.get('/me', authMiddleware, async (req, res) => {
             branchId: manager.branch_id,
             branchName: manager.branch_name || 'Individual Branch',
             isBusy: manager.is_busy || false,
+            branchStatus: manager.branch_status || 'active',
             supermarketId: manager.supermarket_id,
-            supermarketName: manager.supermarket_name || 'Bezaw Supermarket'
+            supermarketName: manager.supermarket_name || 'Bezaw Supermarket',
+            supermarketStatus: manager.supermarket_status || 'active',
+            supermarketBranchCount: parseInt(manager.branch_count) || 0
         });
     } catch (err) {
         console.error('Error fetching profile:', err);

@@ -41,12 +41,7 @@ const Sidebar: React.FC<SidebarProps> = ({ user, activeTab, onTabChange, onLogou
               {item.icon}
             </span>
             <span className="font-bold text-xs uppercase tracking-widest">{item.name}</span>
-            {item.id === 'orders' && (
-              <span className={`ml-auto text-[10px] font-black px-2 py-0.5 rounded-full ${activeTab === item.id ? 'bg-white text-emerald-600' : 'bg-emerald-600 text-white'
-                }`}>
-                12
-              </span>
-            )}
+
           </button>
         ))}
       </nav>

@@ -23,16 +23,16 @@ const storage = multer.diskStorage({
 
 const upload = multer({
     storage: storage,
-    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+    limits: { fileSize: 100 * 1024 * 1024 }, // 5MB limit
     fileFilter: (req, file, cb) => {
-        const filetypes = /jpeg|jpg|png|webp/;
+        const filetypes = /jpeg|jpg|png|webp|mp4|webm|ogg|quicktime/;
         const mimetype = filetypes.test(file.mimetype);
         const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
 
         if (mimetype && extname) {
             return cb(null, true);
         }
-        cb(new Error("Only images (jpeg, jpg, png, webp) are allowed"));
+        cb(new Error("Only images (jpeg, jpg, png, webp) and videos (mp4, webm, ogg, mov) are allowed"));
     }
 });
 
@@ -41,7 +41,7 @@ router.post('/image', upload.single('image'), (req, res) => {
         return res.status(400).json({ message: 'No file uploaded' });
     }
 
-    const imageUrl = `http://localhost:5000/uploads/${req.file.filename}`;
+    const imageUrl = `/uploads/${req.file.filename}`;
     res.json({ imageUrl });
 });
 

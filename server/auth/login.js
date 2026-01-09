@@ -9,9 +9,18 @@ router.post('/login', async (req, res) => {
     const { email, password } = req.body;
     try {
         const text = `
-            SELECT m.*, b.supermarket_id 
-            FROM managers m 
-            LEFT JOIN branches b ON m.branch_id = b.id 
+            SELECT 
+                m.id, m.name, m.email, m.role, m.password_hash, m.branch_id,
+                b.name as branch_name,
+                b.is_busy,
+                b.status as branch_status,
+                s.id as supermarket_id,
+                s.name as supermarket_name,
+                s.status as supermarket_status,
+                (SELECT COUNT(*) FROM branches WHERE supermarket_id = s.id) as branch_count
+            FROM managers m
+            LEFT JOIN branches b ON m.branch_id = b.id
+            LEFT JOIN supermarkets s ON b.supermarket_id = s.id
             WHERE m.email = $1
         `;
         const result = await query(text, [email]);
@@ -36,15 +45,24 @@ router.post('/login', async (req, res) => {
                 supermarketId: manager.supermarket_id
             },
             process.env.JWT_SECRET || 'your_jwt_secret',
-            { expiresIn: '1h' }
+            { expiresIn: '4h' }
         );
 
         res.json({
             token,
             user: {
                 id: manager.id,
+                name: manager.name,
                 email: manager.email,
-                role: manager.role
+                role: manager.role,
+                branchId: manager.branch_id,
+                branchName: manager.branch_name || 'Individual Branch',
+                isBusy: manager.is_busy || false,
+                branchStatus: manager.branch_status || 'active',
+                supermarketId: manager.supermarket_id,
+                supermarketName: manager.supermarket_name || 'Bezaw Supermarket',
+                supermarketStatus: manager.supermarket_status || 'active',
+                supermarketBranchCount: parseInt(manager.branch_count) || 0
             }
         });
     } catch (err) {

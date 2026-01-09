@@ -28,8 +28,8 @@ router.get('/feedback-get', authMiddleware, async (req, res) => {
                 f.created_at as timestamp,
                 o.branch_id
             FROM feedback f
-            JOIN customers c ON f.user_id = c.id
             JOIN orders o ON f.order_id = o.id
+            JOIN customers c ON o.customer_id = c.id
             LEFT JOIN branches b ON o.branch_id = b.id
             WHERE ${filterClause}
             ORDER BY f.created_at DESC

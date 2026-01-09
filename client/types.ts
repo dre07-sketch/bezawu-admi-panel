@@ -32,6 +32,7 @@ export interface OrderItem {
   quantity: number;
   image: string;
   picked: boolean;
+  bundleItems?: { name: string; quantity: number }[];
 }
 
 export interface Order {
@@ -43,6 +44,8 @@ export interface Order {
   totalPrice: number;
   timestamp: string;
   etaMinutes?: number;
+  arrivedAt?: string;
+  handoverTimeSeconds?: number | null;
 }
 
 export enum AuthStep {
@@ -50,7 +53,10 @@ export enum AuthStep {
   OTP,
   FORGOT_PASSWORD,
   RESET_PASSWORD,
-  DASHBOARD
+  DASHBOARD,
+  GLOBAL_TERMINATION,
+  OMNI_LOCKDOWN,
+  BRANCH_OFFLINE
 }
 
 export interface User {
@@ -60,7 +66,10 @@ export interface User {
   branchId: string;
   branchName: string;
   isBusy: boolean;
+  branchStatus: string;
   supermarketName: string;
+  supermarketStatus: string;
+  supermarketBranchCount: number;
 }
 
 export interface CustomerPurchase {
@@ -121,4 +130,38 @@ export interface Bundle {
   is_active: boolean;
   created_at: string;
   items?: BundleItem[];
+  discount: number;
+}
+
+export interface Story {
+  id: string;
+  title: string;
+  video_url: string;
+  link: string;
+  description: string;
+  likes_count: number;
+  comments_count: number;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface StoryComment {
+  id: number;
+  story_id: number;
+  user_name: string;
+  content: string;
+  created_at: string;
+  likes_count: number;
+}
+
+export interface Ad {
+  id: string;
+  type: 'image' | 'video';
+  media_url: string;
+  description: string;
+  duration_hours: number;
+  expires_at: string;
+  is_active: boolean;
+  created_at: string;
+  status_derived?: string;
 }

@@ -67,11 +67,7 @@ const Header: React.FC<HeaderProps> = ({ user, isBusy, onToggleBusy, isDarkMode,
             <span className="text-[10px] font-black uppercase tracking-tighter">Busy</span>
           </button>
 
-          <button className={`p-2 border rounded-xl transition-all relative ${isDarkMode ? 'bg-slate-800/50 border-slate-700 text-slate-400 hover:text-white' : 'bg-slate-100 border-slate-200 text-slate-600 hover:text-slate-900'
-            }`}>
-            <Bell size={18} />
-            <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-emerald-500 rounded-full border border-[#0f1115]"></span>
-          </button>
+        
 
           <div className={`h-6 w-px mx-1 ${isDarkMode ? 'bg-slate-800' : 'bg-slate-200'}`}></div>
 

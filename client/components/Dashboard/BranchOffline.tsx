@@ -1,115 +1,98 @@
 
 import React from 'react';
-import { Lock, Radio, Cpu, Binary } from 'lucide-react';
+import { ShieldAlert, RefreshCw, MapPin, Database, Cpu } from 'lucide-react';
 
 interface BranchOfflineProps {
-  branchName?: string;
-  onRestore?: () => void;
+    branchName: string;
+    onRestore: () => void;
 }
 
 const BranchOffline: React.FC<BranchOfflineProps> = ({ branchName, onRestore }) => {
-  return (
-    <div className="fixed inset-0 z-[10000] flex items-center justify-center p-6 overflow-hidden transition-all duration-1000 bg-[#0f1115] selection:bg-amber-500/30">
-      
-      {/* CRT Scanline Overlay */}
-      <div className="absolute inset-0 pointer-events-none z-50 opacity-[0.05] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,165,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_2px,3px_100%]"></div>
-
-      {/* Cyber Noise Background */}
-      <div className="absolute inset-0 opacity-[0.02] pointer-events-none" 
-           style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}>
-      </div>
-
-      {/* Dynamic Background Elements */}
-      <div className="absolute inset-0 flex items-center justify-center opacity-10">
-        <div className="w-[600px] h-[600px] border-[40px] border-amber-500/20 rounded-full animate-[spin_20s_linear_infinite]"></div>
-        <div className="absolute w-[450px] h-[450px] border-[20px] border-amber-500/10 rounded-full animate-[spin_15s_linear_infinite_reverse]"></div>
-        <div className="absolute w-[800px] h-[800px] bg-amber-500/10 blur-[120px] animate-pulse"></div>
-      </div>
-
-      {/* Main Content Terminal - Centered Perfectly */}
-      <div className="relative z-10 max-w-2xl w-full text-center space-y-12">
-        
-        {/* The Icon Core */}
-        <div className="relative inline-block">
-          <div className="p-12 rounded-[4rem] border-2 transition-all duration-700 shadow-2xl relative z-10 bg-amber-950/20 border-amber-500/40 text-amber-500 shadow-amber-500/20">
-            <Lock size={90} strokeWidth={1} />
-          </div>
-          <div className="absolute -inset-4 border border-dashed rounded-[4.5rem] animate-[spin_10s_linear_infinite] opacity-30 border-amber-500"></div>
-          <div className="absolute -inset-8 border border-dotted rounded-[5rem] animate-[spin_15s_linear_infinite_reverse] opacity-20 border-amber-400"></div>
-        </div>
-        
-        {/* Status Text Area */}
-        <div className="space-y-4">
-          <h1 className="text-8xl font-black tracking-tighter leading-none italic text-slate-100 uppercase">BRANCH OFFLINE</h1>
-          <div className="flex items-center justify-center gap-4">
-            <div className="h-px w-12 bg-amber-500/30" />
-            <p className="text-[12px] font-black uppercase tracking-[0.6em] text-amber-500">
-              STATION SECURED: {branchName?.toUpperCase()}
-            </p>
-            <div className="h-px w-12 bg-amber-500/30" />
-          </div>
-        </div>
-
-        {/* Data readout */}
-        <div className="max-w-md mx-auto p-10 rounded-[3rem] border backdrop-blur-2xl relative overflow-hidden bg-slate-900/40 border-slate-800">
-          <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-amber-500/40"></div>
-          <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-amber-500/40"></div>
-
-          <p className="text-slate-400 text-sm leading-relaxed mb-10 font-medium">
-            Local terminal integrity check passed. Station is currently in a high-security dormant state. No live orders or telemetry are being processed at this coordinate.
-          </p>
-
-          <div className="grid grid-cols-2 gap-6">
-            <div className="p-5 rounded-2xl border flex flex-col items-center gap-3 transition-all border-amber-500/20 bg-amber-500/5">
-               <Radio size={20} className="text-amber-500" />
-               <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Signal Integrity</span>
-               <span className="text-xs font-bold text-amber-400">NOMINAL</span>
+    return (
+        <div className="absolute inset-0 flex items-center justify-center p-8 bg-[#0a0a0c] overflow-hidden">
+            {/* Background Digital Matrix Effect */}
+            <div className="absolute inset-0 opacity-[0.03] pointer-events-none overflow-hidden font-mono text-[8px] leading-none text-red-500 break-all select-none">
+                {Array.from({ length: 100 }).map((_, i) => (
+                    <div key={i} className="whitespace-nowrap animate-pulse" style={{ animationDelay: `${Math.random() * 2}s` }}>
+                        {Array.from({ length: 200 }).map(() => (Math.random() > 0.5 ? '1' : '0')).join('')}
+                    </div>
+                ))}
             </div>
-            <div className="p-5 rounded-2xl border flex flex-col items-center gap-3 transition-all border-amber-500/20 bg-amber-500/5">
-               <Cpu size={20} className="text-amber-500" />
-               <span className="text-[10px] font-black uppercase tracking-widest text-slate-500">Core Process</span>
-               <span className="text-xs font-bold text-amber-400">DORMANT</span>
+
+            {/* Glowing Orbs */}
+            <div className="absolute top-1/4 -left-20 w-96 h-96 bg-red-600/10 rounded-full blur-[120px] animate-pulse"></div>
+            <div className="absolute bottom-1/4 -right-20 w-96 h-96 bg-red-900/10 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '1s' }}></div>
+
+            <div className="max-w-xl w-full relative z-10 text-center space-y-10">
+                {/* Status Indicator */}
+                <div className="inline-flex items-center gap-3 px-4 py-2 rounded-full bg-red-500/10 border border-red-500/20 text-red-500 shadow-lg shadow-red-500/5">
+                    <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                    </span>
+                    <span className="text-[10px] font-black uppercase tracking-[0.3em]">Operational Vacuum Detected</span>
+                </div>
+
+                {/* Main Visual */}
+                <div className="relative inline-block">
+                    <div className="p-10 rounded-[3rem] bg-gradient-to-b from-red-500/5 to-transparent border border-red-500/20 shadow-2xl relative z-10">
+                        <ShieldAlert size={80} className="text-red-500 animate-[pulse_3s_infinite]" strokeWidth={1} />
+                    </div>
+                    <div className="absolute -inset-4 border border-red-500/10 rounded-[3.5rem] animate-[spin_20s_linear_infinite]"></div>
+                </div>
+
+                {/* Identity Header */}
+                <div className="space-y-3">
+                    <h1 className="text-5xl font-black text-white italic tracking-tighter uppercase leading-none">
+                        {branchName} <br />
+                        <span className="text-red-500 not-italic">DE-COUPLED</span>
+                    </h1>
+                    <p className="text-slate-500 text-[11px] font-bold uppercase tracking-[0.4em]">Node Protocol: SHUTDOWN_SEQUENCE_BZW_BRA</p>
+                </div>
+
+                {/* Telemetry Grid */}
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="p-6 rounded-3xl bg-white/[0.02] border border-white/[0.05] flex flex-col items-center gap-3 backdrop-blur-md">
+                        <MapPin size={24} className="text-red-500/40" />
+                        <div>
+                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Grid Proximity</p>
+                            <p className="text-xs font-bold text-white uppercase tracking-tighter">Local Island Mode</p>
+                        </div>
+                    </div>
+                    <div className="p-6 rounded-3xl bg-white/[0.02] border border-white/[0.05] flex flex-col items-center gap-3 backdrop-blur-md">
+                        <Database size={24} className="text-red-500/40" />
+                        <div>
+                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Data State</p>
+                            <p className="text-xs font-bold text-white uppercase tracking-tighter">Write Locked</p>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Restore Control */}
+                <div className="pt-6">
+                    <button
+                        onClick={onRestore}
+                        className="group relative px-12 py-5 rounded-2xl bg-red-600 hover:bg-red-500 transition-all active:scale-95 shadow-2xl shadow-red-600/20 overflow-hidden"
+                    >
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-[shimmer_1.5s_infinite]" />
+                        <div className="flex items-center gap-4 text-white">
+                            <RefreshCw size={18} className="group-hover:rotate-180 transition-transform duration-700" />
+                            <span className="font-black text-xs uppercase tracking-[0.3em]">Re-Initiate Node Handshake</span>
+                        </div>
+                    </button>
+                    <p className="mt-6 text-[9px] text-slate-600 font-bold uppercase tracking-[0.2em] flex items-center justify-center gap-2">
+                        <Cpu size={12} /> Hardware ID: 0x88-AD-C2-44-BF
+                    </p>
+                </div>
             </div>
-          </div>
-        </div>
 
-        {/* Action Controls Removed per Request */}
-        <div className="flex items-center justify-center gap-6 opacity-40">
-           <div className="flex gap-1">
-             {[...Array(3)].map((_, i) => <div key={i} className="w-1.5 h-1.5 rounded-full bg-amber-500" style={{ animationDelay: `${i * 0.2}s` }}></div>)}
-           </div>
-           <span className="text-[10px] font-black uppercase tracking-[0.5em] text-slate-500">Status: Secure Dormancy</span>
-           <div className="flex gap-1">
-             {[...Array(3)].map((_, i) => <div key={i} className="w-1.5 h-1.5 rounded-full bg-amber-500" style={{ animationDelay: `${i * 0.2}s` }}></div>)}
-           </div>
+            <style>{`
+                @keyframes shimmer {
+                    100% { transform: translateX(100%); }
+                }
+            `}</style>
         </div>
-
-      </div>
-
-      {/* Interface Metadata Overlay */}
-      <div className="absolute top-12 left-12 flex items-center gap-6">
-        <div className="w-12 h-12 rounded-xl flex items-center justify-center border-2 border-amber-500/30 text-amber-500">
-           <Binary size={24} />
-        </div>
-        <div className="flex flex-col gap-1">
-          <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Bezaw-OS Station OS v2.1</span>
-          <span className="text-[10px] font-black uppercase tracking-widest text-amber-500">
-            Security Context: STATION_ISOLATED
-          </span>
-        </div>
-      </div>
-
-      <div className="absolute bottom-12 right-12 text-right">
-        <div className="inline-block p-4 rounded-xl bg-white/5 border border-white/10 backdrop-blur-md">
-          <p className="text-[10px] font-mono text-slate-500 leading-tight">
-            <span className="text-amber-500">ERR_NODE_SLEEP</span><br/>
-            COORD: 9.0192° N, 38.7468° E<br/>
-            TERMINAL_ID: BZW-{Math.random().toString(36).substring(7).toUpperCase()}
-          </p>
-        </div>
-      </div>
-    </div>
-  );
+    );
 };
 
 export default BranchOffline;

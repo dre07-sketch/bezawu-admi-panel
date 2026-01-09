@@ -11,13 +11,9 @@ import {
   ClipboardList,
   Loader2
 } from 'lucide-react';
-import { BranchFeedback, SystemAlert } from '../../types';
+import { BranchFeedback } from '../../types';
 
-const mockAlerts: SystemAlert[] = [
-  { id: 'A-1', type: 'CAPACITY', message: 'Pick-up Zone A at 90% capacity', level: 'HIGH', time: '5m ago' },
-  { id: 'A-2', type: 'STOCK', message: 'Milk (1L) stock critically low', level: 'MEDIUM', time: '12m ago' },
-  { id: 'A-3', type: 'STAFF', message: 'Abebe B. logged off - Picker gap detected', level: 'LOW', time: '1h ago' }
-];
+
 
 export const FeedbackFeed: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) => {
   const [showSummary, setShowSummary] = useState(false);
@@ -109,35 +105,31 @@ export const FeedbackFeed: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) 
                       </div>
                     </div>
                   </div>
-                  <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${f.sentiment === 'POSITIVE' ? 'bg-emerald-500/10 text-emerald-500' :
-                    f.sentiment === 'CRITICAL' ? 'bg-rose-500/10 text-rose-500' : 'bg-amber-500/10 text-amber-500'
+                  <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${f.rating === 5 ? 'bg-emerald-500/10 text-emerald-500' :
+                    f.rating === 4 ? 'bg-teal-500/10 text-teal-500' :
+                      f.rating === 3 ? 'bg-blue-500/10 text-blue-500' :
+                        f.rating === 2 ? 'bg-orange-500/10 text-orange-500' :
+                          'bg-rose-500/10 text-rose-500'
                     }`}>
-                    <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${f.sentiment === 'POSITIVE' ? 'bg-emerald-500' :
-                      f.sentiment === 'CRITICAL' ? 'bg-rose-500' : 'bg-amber-500'
+                    <div className={`w-1.5 h-1.5 rounded-full animate-pulse ${f.rating === 5 ? 'bg-emerald-500' :
+                      f.rating === 4 ? 'bg-teal-500' :
+                        f.rating === 3 ? 'bg-blue-500' :
+                          f.rating === 2 ? 'bg-orange-500' :
+                            'bg-rose-500'
                       }`} />
-                    {f.sentiment || 'NEUTRAL'}
+                    {
+                      f.rating === 5 ? 'Excellent' :
+                        f.rating === 4 ? 'Very Good' :
+                          f.rating === 3 ? 'Good' :
+                            f.rating === 2 ? 'Bad' :
+                              'Worst'
+                    }
                   </div>
                 </div>
 
-                <p className={`text-base leading-relaxed mb-8 ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
+                <p className={`text-base leading-relaxed mb-4 ${isDarkMode ? 'text-slate-300' : 'text-slate-600'}`}>
                   "{f.comment}"
                 </p>
-
-                {f.suggestedAction && (
-                  <div className={`p-5 rounded-[1.5rem] border-2 border-dashed flex items-center justify-between group cursor-pointer transition-all ${isDarkMode ? 'bg-emerald-500/5 border-emerald-900/30' : 'bg-emerald-50/50 border-emerald-100'
-                    }`}>
-                    <div className="flex items-center gap-4">
-                      <div className="bg-emerald-600 p-2 rounded-xl text-white shadow-lg shadow-emerald-600/20">
-                        <CheckCircle2 size={16} />
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Action Plan</p>
-                        <p className={`text-sm font-bold mt-0.5 ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}>{f.suggestedAction}</p>
-                      </div>
-                    </div>
-                    <ArrowRight size={18} className="text-emerald-600 group-hover:translate-x-1 transition-transform" />
-                  </div>
-                )}
               </div>
             ))
           )}
@@ -146,126 +138,77 @@ export const FeedbackFeed: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode }) 
         {/* Sidebar Alerts & Heatmap */}
         <div className="space-y-8">
           {/* Internal Alerts */}
-          <section>
-            <div className="flex items-center gap-3 mb-4 px-2">
-              <AlertTriangle size={18} className="text-amber-500" />
-              <h3 className={`text-xs font-black uppercase tracking-[0.2em] ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-                Branch Health Pulse
-              </h3>
-            </div>
-            <div className="space-y-4">
-              {mockAlerts.map((a) => (
-                <div
-                  key={a.id}
-                  className={`p-6 rounded-[2rem] border-l-4 transition-all hover:bg-opacity-80 ${a.level === 'HIGH' ? 'border-rose-500' :
-                    a.level === 'MEDIUM' ? 'border-amber-500' : 'border-emerald-500'
-                    } ${isDarkMode ? 'bg-[#121418] border-y border-r border-slate-800' : 'bg-white shadow-sm'}`}
-                >
-                  <div className="flex justify-between items-start">
-                    <p className={`text-sm font-bold ${isDarkMode ? 'text-slate-200' : 'text-slate-800'}`}>{a.message}</p>
-                    <span className="text-[9px] font-black text-slate-500 uppercase">{a.time}</span>
-                  </div>
-                  <div className="flex items-center gap-4 mt-3">
-                    <span className={`text-[9px] font-black uppercase tracking-widest ${a.level === 'HIGH' ? 'text-rose-500' :
-                      a.level === 'MEDIUM' ? 'text-amber-500' : 'text-emerald-500'
-                      }`}>
-                      {a.level} Priority
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* Efficiency Widget */}
-          <section className={`p-8 rounded-[2.5rem] border ${isDarkMode ? 'bg-emerald-950/20 border-emerald-900/30' : 'bg-emerald-50 border-emerald-100'
-            }`}>
-            <div className="flex items-center gap-3 mb-6">
-              <TrendingUp size={20} className="text-emerald-600" />
-              <h3 className="text-xs font-black uppercase tracking-widest text-emerald-800">Branch Velocity</h3>
-            </div>
-            <div className="space-y-4">
-              <div className="flex justify-between items-end">
-                <span className="text-4xl font-black text-emerald-900 tracking-tighter">94%</span>
-                <span className="text-[10px] font-black text-emerald-600 uppercase mb-1">Score</span>
-              </div>
-              <div className="h-2 w-full bg-emerald-900/10 rounded-full overflow-hidden">
-                <div className="h-full bg-emerald-600 w-[94%]" />
-              </div>
-              <p className="text-[10px] font-bold text-emerald-700/60 leading-relaxed italic uppercase">
-                Currently 12% more efficient than Bole branch average.
-              </p>
-            </div>
-          </section>
         </div>
       </div>
 
       {/* Summary Modal */}
-      {showSummary && (
-        <div className="fixed inset-0 z-[100000] flex items-center justify-center p-6 bg-black/40 backdrop-blur-xl animate-in fade-in duration-300">
-          <div className={`max-w-2xl w-full rounded-[3rem] overflow-hidden shadow-2xl transition-all border animate-in zoom-in-95 duration-500 ${isDarkMode ? 'bg-[#121418] border-slate-700' : 'bg-white border-slate-100'
-            }`}>
-            <div className="p-12 relative overflow-hidden">
-              {/* Deco */}
-              <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+      {
+        showSummary && (
+          <div className="fixed inset-0 z-[100000] flex items-center justify-center p-6 bg-black/40 backdrop-blur-xl animate-in fade-in duration-300">
+            <div className={`max-w-2xl w-full rounded-[3rem] overflow-hidden shadow-2xl transition-all border animate-in zoom-in-95 duration-500 ${isDarkMode ? 'bg-[#121418] border-slate-700' : 'bg-white border-slate-100'
+              }`}>
+              <div className="p-12 relative overflow-hidden">
+                {/* Deco */}
+                <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
 
-              <button onClick={() => setShowSummary(false)} className="absolute top-8 right-8 text-slate-400 hover:text-slate-900 transition-colors">
-                <X size={24} />
-              </button>
-
-              <div className="flex items-center gap-4 mb-10">
-                <div className="bg-emerald-600 p-4 rounded-2xl text-white shadow-xl shadow-emerald-600/30">
-                  <ClipboardList size={32} />
-                </div>
-                <div>
-                  <h2 className={`text-2xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Branch Summary</h2>
-                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">Operational Overview</p>
-                </div>
-              </div>
-
-              <div className="space-y-8 relative z-10">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <div className="h-px flex-1 bg-slate-800/10" />
-                    <span className="text-[9px] font-black text-emerald-600 uppercase tracking-[0.3em]">EXECUTIVE HIGHLIGHTS</span>
-                    <div className="h-px flex-1 bg-slate-800/10" />
-                  </div>
-                  <ul className="space-y-5">
-                    <li className="flex gap-4">
-                      <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                      <p className={`text-sm font-bold ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>
-                        Customer satisfaction trended upward by 14% due to <span className="text-emerald-500">Fast Picking</span> KPIs.
-                      </p>
-                    </li>
-                    <li className="flex gap-4">
-                      <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-amber-500" />
-                      <p className={`text-sm font-bold ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>
-                        Expected peak surge at <span className="text-amber-500">1:30 PM</span>. Deploy 2 additional pickers from Stockroom to mitigate delays.
-                      </p>
-                    </li>
-                    <li className="flex gap-4">
-                      <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-rose-500" />
-                      <p className={`text-sm font-bold ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>
-                        Review quality protocols for produce in CMC branch based on localized feedback.
-                      </p>
-                    </li>
-                  </ul>
-                </div>
-              </div>
-
-              <div className="mt-12">
-                <button
-                  onClick={() => setShowSummary(false)}
-                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-5 rounded-2xl text-[11px] uppercase tracking-[0.2em] transition-all shadow-xl shadow-emerald-600/20"
-                >
-                  Acknowledge Report
+                <button onClick={() => setShowSummary(false)} className="absolute top-8 right-8 text-slate-400 hover:text-slate-900 transition-colors">
+                  <X size={24} />
                 </button>
+
+                <div className="flex items-center gap-4 mb-10">
+                  <div className="bg-emerald-600 p-4 rounded-2xl text-white shadow-xl shadow-emerald-600/30">
+                    <ClipboardList size={32} />
+                  </div>
+                  <div>
+                    <h2 className={`text-2xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Branch Summary</h2>
+                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mt-1">Operational Overview</p>
+                  </div>
+                </div>
+
+                <div className="space-y-8 relative z-10">
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                      <div className="h-px flex-1 bg-slate-800/10" />
+                      <span className="text-[9px] font-black text-emerald-600 uppercase tracking-[0.3em]">EXECUTIVE HIGHLIGHTS</span>
+                      <div className="h-px flex-1 bg-slate-800/10" />
+                    </div>
+                    <ul className="space-y-5">
+                      <li className="flex gap-4">
+                        <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                        <p className={`text-sm font-bold ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                          Customer satisfaction trended upward by 14% due to <span className="text-emerald-500">Fast Picking</span> KPIs.
+                        </p>
+                      </li>
+                      <li className="flex gap-4">
+                        <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-amber-500" />
+                        <p className={`text-sm font-bold ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                          Expected peak surge at <span className="text-amber-500">1:30 PM</span>. Deploy 2 additional pickers from Stockroom to mitigate delays.
+                        </p>
+                      </li>
+                      <li className="flex gap-4">
+                        <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-rose-500" />
+                        <p className={`text-sm font-bold ${isDarkMode ? 'text-slate-300' : 'text-slate-700'}`}>
+                          Review quality protocols for produce in CMC branch based on localized feedback.
+                        </p>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="mt-12">
+                  <button
+                    onClick={() => setShowSummary(false)}
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-5 rounded-2xl text-[11px] uppercase tracking-[0.2em] transition-all shadow-xl shadow-emerald-600/20"
+                  >
+                    Acknowledge Report
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
-    </div>
+        )
+      }
+    </div >
   );
 };
 

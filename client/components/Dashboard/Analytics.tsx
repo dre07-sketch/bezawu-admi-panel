@@ -2,7 +2,7 @@
 import React from 'react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  BarChart, Bar, Cell, AreaChart, Area, PieChart, Pie
+  BarChart, Bar, Cell, AreaChart, Area, PieChart, Pie, ComposedChart
 } from 'recharts';
 import {
   TrendingUp, Clock, Users, DollarSign,
@@ -96,11 +96,26 @@ const Analytics: React.FC<AnalyticsProps> = ({ isDarkMode }) => {
   }
 
   const kpiStats = [
-    { label: 'Revenue (ETB)', value: data.kpis.revenue.value, trend: data.kpis.revenue.trend, up: data.kpis.revenue.up, icon: <DollarSign size={20} />, color: 'text-emerald-500' },
+    { label: 'Revenue', value: data.kpis.revenue.value, trend: data.kpis.revenue.trend, up: data.kpis.revenue.up, icon: <DollarSign size={20} />, color: 'text-emerald-500' },
     { label: 'Avg Rating', value: data.kpis.rating.value, trend: data.kpis.rating.trend, up: data.kpis.rating.up, icon: <Star size={20} />, color: 'text-amber-500' },
     { label: 'Handover Time', value: data.kpis.wait.value, trend: data.kpis.wait.trend, up: data.kpis.wait.up, icon: <Clock size={20} />, color: 'text-blue-500' },
     { label: 'Total Orders', value: data.kpis.orders.value, trend: data.kpis.orders.trend, up: data.kpis.orders.up, icon: <Package size={20} />, color: 'text-purple-500' },
   ];
+
+  // Derive Key Highlights from hourlyData (which is actually monthly data)
+  const totalRevenue = data.hourlyData.reduce((acc, curr) => acc + (parseFloat(curr.revenue) || 0), 0);
+  const totalOrders = data.hourlyData.reduce((acc, curr) => acc + (parseInt(curr.orders) || 0), 0);
+  const aov = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+
+  const sortedByRevenue = [...data.hourlyData].sort((a, b) => (parseFloat(b.revenue) || 0) - (parseFloat(a.revenue) || 0));
+  const bestMonth = sortedByRevenue.length > 0 ? sortedByRevenue[0] : null;
+
+  const kpiHighlights = [
+    { label: 'Avg Order Value', value: `${aov.toLocaleString(undefined, { maximumFractionDigits: 0 })} ETB`, sub: 'Per transaction average', color: 'text-emerald-500', barColor: 'bg-emerald-500' },
+    { label: 'Peak Sales Month', value: bestMonth ? bestMonth.time : 'N/A', sub: bestMonth ? `Revenue: ${(parseFloat(bestMonth.revenue) / 1000).toFixed(1)}k` : '', color: 'text-blue-500', barColor: 'bg-blue-500' },
+    { label: 'Orders this Year', value: totalOrders.toLocaleString(), sub: 'Total volume', color: 'text-purple-500', barColor: 'bg-purple-500' },
+  ];
+
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
       {/* Header */}
@@ -125,7 +140,6 @@ const Analytics: React.FC<AnalyticsProps> = ({ isDarkMode }) => {
         </div>
       </div>
 
-      {/* Primary KPI Grid */}
       {/* Primary KPI Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {kpiStats.map((stat, i) => (
@@ -154,7 +168,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ isDarkMode }) => {
           <div className="flex justify-between items-center mb-10">
             <div>
               <h3 className={`text-xl font-black ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>Revenue Stream</h3>
-              <p className="text-[10px] text-slate-500 mt-1 uppercase tracking-widest font-black">Daily Volume Overview</p>
+              <p className="text-[10px] text-slate-500 mt-1 uppercase tracking-widest font-black">Monthly Volume Overview</p>
             </div>
           </div>
           <div className="h-[300px] w-full">
@@ -201,9 +215,9 @@ const Analytics: React.FC<AnalyticsProps> = ({ isDarkMode }) => {
               </ResponsiveContainer>
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                 <p className="text-2xl font-black text-emerald-500">
-                  {Math.round((data.sentimentData.find(s => s.name === 'Positive')?.value || 0) / Math.max(1, data.sentimentData.reduce((a, b) => a + b.value, 0)) * 100)}%
+                  {Math.round((data.sentimentData.find(s => s.name === 'Excellent')?.value || 0) / Math.max(1, data.sentimentData.reduce((a, b) => a + b.value, 0)) * 100)}%
                 </p>
-                <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Positive</p>
+                <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Excellent</p>
               </div>
             </div>
             <div className="space-y-4">
@@ -231,39 +245,58 @@ const Analytics: React.FC<AnalyticsProps> = ({ isDarkMode }) => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Rating Velocity */}
+        {/* Sales Performance (Replaces Rating Velocity) */}
         <div className={`lg:col-span-2 border p-8 rounded-[2.5rem] transition-colors ${isDarkMode ? 'bg-[#121418] border-slate-800' : 'bg-white border-slate-200 shadow-sm'
           }`}>
           <div className="flex justify-between items-center mb-8">
-            <h3 className={`text-xl font-black ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>Rating Velocity</h3>
-            <span className="text-[10px] font-black text-amber-500 uppercase tracking-[0.2em] border border-amber-500/20 px-4 py-1.5 rounded-full">Score Trend</span>
+            <div>
+              <h3 className={`text-xl font-black ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>Sales Performance</h3>
+              <p className="text-[10px] text-slate-500 mt-1 uppercase tracking-widest font-black">Orders vs Revenue</p>
+            </div>
+            <div className="flex gap-4">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                <span className="text-[10px] font-bold text-slate-500">Revenue</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-indigo-500" />
+                <span className="text-[10px] font-bold text-slate-500">Orders</span>
+              </div>
+            </div>
           </div>
           <div className="h-[250px] w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={data.hourlyData}>
+              {/* @ts-ignore */}
+              <ComposedChart data={data.hourlyData}>
                 <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? "#1e293b" : "#e2e8f0"} vertical={false} />
                 <XAxis dataKey="time" stroke="#475569" fontSize={10} tickLine={false} axisLine={false} />
-                <YAxis stroke="#475569" fontSize={10} tickLine={false} axisLine={false} domain={[0, 5]} />
-                <Tooltip />
-                <Line type="monotone" dataKey="rating" stroke="#f59e0b" strokeWidth={4} dot={{ r: 4, fill: '#f59e0b', strokeWidth: 2, stroke: isDarkMode ? '#121418' : '#fff' }} activeDot={{ r: 8 }} />
-              </LineChart>
+                <YAxis yAxisId="left" stroke="#475569" fontSize={10} tickLine={false} axisLine={false} tickFormatter={(val) => `${val / 1000}k`} />
+                <YAxis yAxisId="right" orientation="right" stroke="#475569" fontSize={10} tickLine={false} axisLine={false} />
+                <Tooltip content={<CustomTooltip isDarkMode={isDarkMode} />} />
+                <Bar yAxisId="left" dataKey="revenue" fill="#10b981" radius={[4, 4, 0, 0]} barSize={20} fillOpacity={0.6} />
+                <Line yAxisId="right" type="monotone" dataKey="orders" stroke="#6366f1" strokeWidth={3} dot={{ r: 4, fill: '#6366f1', strokeWidth: 2, stroke: isDarkMode ? '#121418' : '#fff' }} />
+              </ComposedChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Quick Insights */}
+        {/* Key Highlights (Replaces Operational Insights) */}
         <div className={`border p-8 rounded-[2.5rem] transition-colors ${isDarkMode ? 'bg-[#121418] border-slate-800' : 'bg-white border-slate-200 shadow-sm'
           }`}>
-          <h3 className={`text-lg font-black mb-6 ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>Operational Insights</h3>
+          <div className="flex justify-between items-center mb-6">
+            <h3 className={`text-lg font-black ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>Key Highlights</h3>
+            <Zap size={16} className="text-amber-500" />
+          </div>
           <div className="space-y-6">
-            {data.insights.map((metric, i) => (
-              <div key={i} className="space-y-2">
-                <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
-                  <span className="text-slate-500">{metric.label}</span>
-                  <span className={isDarkMode ? 'text-white' : 'text-slate-900'}>{metric.score}%</span>
+            {kpiHighlights.map((metric, i) => (
+              <div key={i} className={`p-4 rounded-2xl border ${isDarkMode ? 'bg-slate-900/50 border-slate-800' : 'bg-slate-50 border-slate-100'}`}>
+                <div className="flex justify-between items-start mb-2">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">{metric.label}</p>
+                  <div className={`w-2 h-2 rounded-full ${metric.barColor}`} />
                 </div>
-                <div className="h-2 w-full bg-slate-200/20 rounded-full overflow-hidden">
-                  <div className={`h-full rounded-full ${metric.color}`} style={{ width: `${metric.score}%` }} />
+                <div className="flex flex-col">
+                  <span className={`text-xl font-black ${isDarkMode ? 'text-white' : 'text-slate-900'} ${metric.color}`}>{metric.value}</span>
+                  <span className="text-[10px] text-slate-500 font-bold">{metric.sub}</span>
                 </div>
               </div>
             ))}

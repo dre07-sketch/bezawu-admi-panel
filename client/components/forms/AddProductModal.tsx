@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { X, PlusCircle, Tag, Layers, DollarSign, Database, Plus } from 'lucide-react';
+import { X, PlusCircle, Tag, Layers, DollarSign, Database, Plus, ImageIcon, Loader2 } from 'lucide-react';
 
 interface AddProductModalProps {
     onClose: () => void;
@@ -23,6 +23,8 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ onClose, onAddCategor
 
     const [categories, setCategories] = useState<Category[]>([]);
     const [loading, setLoading] = useState(false);
+    const [mediaFile, setMediaFile] = useState<File | null>(null);
+    const [error, setError] = useState('');
 
     useEffect(() => {
         const fetchData = async () => {
@@ -44,11 +46,34 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ onClose, onAddCategor
         fetchData();
     }, []);
 
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            setMediaFile(e.target.files[0]);
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
+        setError('');
         try {
             const token = localStorage.getItem('token');
+            let imageUrl = null;
+
+            if (mediaFile) {
+                const formDataUpload = new FormData();
+                formDataUpload.append('image', mediaFile);
+                const uploadRes = await fetch('http://localhost:5000/api/upload/image', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formDataUpload
+                });
+                if (uploadRes.ok) {
+                    const uploadData = await uploadRes.json();
+                    imageUrl = uploadData.imageUrl;
+                }
+            }
+
             const response = await fetch('http://localhost:5000/api/products/products-post', {
                 method: 'POST',
                 headers: {
@@ -62,7 +87,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ onClose, onAddCategor
                     category_id: formData.category_id,
                     description: `Stock level: ${formData.stock}`,
                     sku: `SKU-${Math.floor(Math.random() * 10000)}`,
-                    image_url: null
+                    image_url: imageUrl
                     // branch_id is automatically assigned by backend from req.user
                 }),
             });
@@ -71,10 +96,12 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ onClose, onAddCategor
                 onClose();
                 window.location.reload();
             } else {
-                console.error('Failed to add product');
+                const errorData = await response.json();
+                setError(errorData.message || 'Failed to add product');
             }
         } catch (error) {
             console.error('Error adding product', error);
+            setError('System error occurred');
         } finally {
             setLoading(false);
         }
@@ -110,6 +137,40 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ onClose, onAddCategor
                 </div>
 
                 <form onSubmit={handleSubmit} className="px-10 pb-10 space-y-4">
+                    {/* Media Upload */}
+                    <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2 px-1">
+                            <ImageIcon size={12} /> Product Image
+                        </label>
+                        <div className="relative">
+                            <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                id="product-image-upload"
+                                onChange={handleFileChange}
+                            />
+                            <label
+                                htmlFor="product-image-upload"
+                                className={`w-full flex items-center justify-between px-6 py-4 rounded-2xl border border-dashed transition-all cursor-pointer ${isDarkMode ? 'bg-[#0f1115] border-slate-800 hover:border-emerald-500' : 'bg-slate-50 border-slate-200 hover:border-emerald-500'}`}
+                            >
+                                <div className="flex items-center gap-4">
+                                    <div className={`p-2 rounded-xl border overflow-hidden ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'}`}>
+                                        {mediaFile ? (
+                                            <img src={URL.createObjectURL(mediaFile)} alt="Preview" className="w-10 h-10 object-cover rounded-lg" />
+                                        ) : (
+                                            <ImageIcon size={20} className="text-emerald-500" />
+                                        )}
+                                    </div>
+                                    <div className={`text-xs font-bold ${mediaFile ? (isDarkMode ? 'text-white' : 'text-slate-900') : 'text-slate-500'}`}>
+                                        {mediaFile ? mediaFile.name : 'Select product photo...'}
+                                    </div>
+                                </div>
+                                <span className="text-[9px] font-bold uppercase text-slate-500 bg-slate-500/10 px-3 py-1.5 rounded-lg">Upload</span>
+                            </label>
+                        </div>
+                    </div>
+
                     <div className="grid grid-cols-1 gap-4">
                         <div className="space-y-2">
                             <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
@@ -179,6 +240,12 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ onClose, onAddCategor
                         </div>
                     </div>
 
+                    {error && (
+                        <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-500 text-[10px] font-black uppercase tracking-widest text-center">
+                            {error}
+                        </div>
+                    )}
+
                     <div className="pt-4 flex gap-4">
                         <button
                             type="button"
@@ -191,9 +258,10 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ onClose, onAddCategor
                         <button
                             type="submit"
                             disabled={loading}
-                            className="flex-[2] bg-emerald-600 hover:bg-emerald-700 text-white font-black py-4 rounded-2xl text-sm transition-all shadow-lg shadow-emerald-600/20 active:scale-95 uppercase tracking-widest disabled:opacity-50"
+                            className="flex-[2] bg-emerald-600 hover:bg-emerald-700 text-white font-black py-4 rounded-2xl text-sm transition-all shadow-lg shadow-emerald-600/20 active:scale-95 uppercase tracking-widest disabled:opacity-50 flex items-center justify-center gap-2"
                         >
-                            {loading ? 'Creating...' : 'Create Asset'}
+                            {loading && <Loader2 className="animate-spin" size={18} />}
+                            {loading ? 'Processing...' : 'Create Asset'}
                         </button>
                     </div>
                 </form>

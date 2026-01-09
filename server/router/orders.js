@@ -18,14 +18,23 @@ router.get('/orders-get', authMiddleware, async (req, res) => {
                 o.car_color,
                 o.car_plate,
                 o.created_at as "timestamp",
+                o.arrived_at as "arrivedAt",
+                EXTRACT(EPOCH FROM o.handover_time) as "handoverTimeSeconds",
                 COALESCE(
                     json_agg(
                         json_build_object(
                             'id', oi.id,
-                            'name', p.name,
+                            'name', COALESCE(p.name, bun.name),
+                            'isBundle', (oi.bundle_id IS NOT NULL),
                             'price', oi.price_at_purchase,
                             'quantity', oi.quantity,
-                            'image', p.image_url,
+                            'image', COALESCE(p.image_url, bun.image_url),
+                            'bundleItems', (
+                                SELECT json_agg(json_build_object('name', bp.name, 'quantity', bi.quantity))
+                                FROM bundle_items bi
+                                JOIN products bp ON bi.product_id = bp.id
+                                WHERE bi.bundle_id = oi.bundle_id
+                            ),
                             'picked', false
                         )
                     ) FILTER(WHERE oi.id IS NOT NULL),
@@ -35,6 +44,7 @@ router.get('/orders-get', authMiddleware, async (req, res) => {
             LEFT JOIN customers u ON o.customer_id = u.id
             LEFT JOIN order_items oi ON o.id = oi.order_id
             LEFT JOIN products p ON oi.product_id = p.id
+            LEFT JOIN bundles bun ON oi.bundle_id = bun.id
             LEFT JOIN branches b ON o.branch_id = b.id
             WHERE 1=1
         `;
@@ -50,7 +60,7 @@ router.get('/orders-get', authMiddleware, async (req, res) => {
             return res.json([]);
         }
 
-        text += ` GROUP BY o.id, u.name, o.status, o.total_price, o.car_model, o.car_color, o.car_plate, o.created_at ORDER BY o.created_at DESC`;
+        text += ` GROUP BY o.id, u.name, o.status, o.total_price, o.car_model, o.car_color, o.car_plate, o.created_at, o.arrived_at, o.handover_time ORDER BY o.created_at DESC`;
 
         const result = await query(text, params);
 
@@ -65,7 +75,9 @@ router.get('/orders-get', authMiddleware, async (req, res) => {
                 plate: row.car_plate || 'N/A'
             },
             timestamp: row.timestamp,
-            items: Array.isArray(row.items) ? row.items : []
+            items: Array.isArray(row.items) ? row.items : [],
+            arrivedAt: row.arrivedAt,
+            handoverTimeSeconds: row.handoverTimeSeconds ? parseFloat(row.handoverTimeSeconds) : null
         }));
 
 
@@ -108,7 +120,20 @@ router.patch('/:id/status', authMiddleware, async (req, res) => {
             return res.status(403).json({ message: 'Unauthorized to update this order' });
         }
 
-        const result = await query('UPDATE orders SET status = $1 WHERE id = $2 RETURNING *', [status, id]);
+        let updateQuery = 'UPDATE orders SET status = $1';
+        let queryParams = [status];
+
+        if (status === 'ARRIVED') {
+            updateQuery += ', arrived_at = COALESCE(arrived_at, NOW())';
+        } else if (['COMPLETED', 'VERIFIED', 'GIVEN'].includes(status)) {
+            // Update completed_at and calculate handover_time
+            updateQuery += ', completed_at = NOW(), handover_time = CASE WHEN arrived_at IS NOT NULL THEN NOW() - arrived_at ELSE handover_time END';
+        }
+
+        updateQuery += ' WHERE id = $' + (queryParams.length + 1) + ' RETURNING *';
+        queryParams.push(id);
+
+        const result = await query(updateQuery, queryParams);
 
         if (result.rows.length === 0) {
             return res.status(404).json({ message: 'Order not found' });
@@ -143,11 +168,12 @@ router.get('/:id/items', authMiddleware, async (req, res) => {
         const itemsQuery = `
             SELECT 
                 oi.id,
-                p.name,
+                COALESCE(p.name, bun.name) as name,
                 oi.price_at_purchase as price,
                 oi.quantity
             FROM order_items oi
-            JOIN products p ON oi.product_id = p.id
+            LEFT JOIN products p ON oi.product_id = p.id
+            LEFT JOIN bundles bun ON oi.bundle_id = bun.id
             WHERE oi.order_id = $1
         `;
         const itemsResult = await query(itemsQuery, [id]);
@@ -173,11 +199,13 @@ router.get('/arrivals-get', authMiddleware, async (req, res) => {
                 o.car_model,
                 o.car_color,
                 o.car_plate,
+                o.arrived_at as "arrivedAt",
+                EXTRACT(EPOCH FROM o.handover_time) as "handoverTimeSeconds",
                 COALESCE(
                     json_agg(
                         json_build_object(
                             'id', oi.id,
-                            'name', p.name,
+                            'name', COALESCE(p.name, bun.name),
                             'price', oi.price_at_purchase,
                             'quantity', oi.quantity
                         )
@@ -188,6 +216,7 @@ router.get('/arrivals-get', authMiddleware, async (req, res) => {
             LEFT JOIN customers u ON o.customer_id = u.id
             LEFT JOIN order_items oi ON o.id = oi.order_id
             LEFT JOIN products p ON oi.product_id = p.id
+            LEFT JOIN bundles bun ON oi.bundle_id = bun.id
             LEFT JOIN branches b ON o.branch_id = b.id
             WHERE o.status = 'ARRIVED'
         `;
@@ -201,7 +230,7 @@ router.get('/arrivals-get', authMiddleware, async (req, res) => {
             params.push(supermarketId);
         }
 
-        text += ` GROUP BY o.id, u.name, o.status, o.total_price, o.car_model, o.car_color, o.car_plate`;
+        text += ` GROUP BY o.id, u.name, o.status, o.total_price, o.car_model, o.car_color, o.car_plate, o.arrived_at, o.handover_time`;
 
         const result = await query(text, params);
 
@@ -215,7 +244,9 @@ router.get('/arrivals-get', authMiddleware, async (req, res) => {
                 color: row.car_color || 'Gray',
                 plate: row.car_plate || 'N/A'
             },
-            items: row.items
+            items: row.items,
+            arrivedAt: row.arrivedAt,
+            handoverTimeSeconds: row.handoverTimeSeconds ? parseFloat(row.handoverTimeSeconds) : null
         }));
 
         res.json(arrivals);

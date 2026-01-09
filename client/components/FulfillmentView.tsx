@@ -15,20 +15,31 @@ import {
     QrCode,
     ArrowRight,
     Receipt,
-    ShieldCheck
+    ShieldCheck,
+    Loader2,
+    MessageSquare
 } from 'lucide-react';
-import { Order, OrderStatus } from '../../types';
-import { mockOrders } from '../../services/mockData';
+import { Order, OrderStatus } from '../types';
+import { mockOrders } from '../services/mockData';
 
 interface FulfillmentViewProps {
+    order: Order | null;
     onBack: () => void;
+    onUpdateStatus: (id: string, status: OrderStatus) => void;
+    onOpenChat: (order: Order) => void;
     isDarkMode: boolean;
 }
 
-const FulfillmentView: React.FC<FulfillmentViewProps> = ({ onBack, isDarkMode }) => {
-    const [activeOrder, setActiveOrder] = useState<Order>(mockOrders[2]); // Using "Ready" order
+const FulfillmentView: React.FC<FulfillmentViewProps> = ({ order, onBack, onUpdateStatus, onOpenChat, isDarkMode }) => {
+    const [activeOrder, setActiveOrder] = useState<Order | null>(order);
     const [pickedItems, setPickedItems] = useState<Set<string>>(new Set());
     const [isConfirmed, setIsConfirmed] = useState(false);
+
+    useEffect(() => {
+        if (order) {
+            setActiveOrder(order);
+        }
+    }, [order]);
 
     const toggleItem = (id: string) => {
         const next = new Set(pickedItems);
@@ -37,12 +48,16 @@ const FulfillmentView: React.FC<FulfillmentViewProps> = ({ onBack, isDarkMode })
         setPickedItems(next);
     };
 
-    const allPicked = pickedItems.size === activeOrder.items.length;
+    const allPicked = activeOrder ? pickedItems.size === activeOrder.items.length : false;
 
-    const handleConfirm = () => {
-        if (allPicked) {
+    const handleConfirm = async () => {
+        if (allPicked && activeOrder) {
             setIsConfirmed(true);
-            // Logic for delivery confirmation would go here
+            try {
+                await onUpdateStatus(activeOrder.id, OrderStatus.COMPLETED);
+            } catch (err) {
+                console.error('Failed to complete order:', err);
+            }
         }
     };
 
@@ -63,6 +78,16 @@ const FulfillmentView: React.FC<FulfillmentViewProps> = ({ onBack, isDarkMode })
                 >
                     Return to Hub
                 </button>
+            </div>
+        );
+    }
+
+    if (!activeOrder) {
+        return (
+            <div className={`h-screen w-full max-w-[450px] mx-auto flex flex-col items-center justify-center p-8 text-center ${isDarkMode ? 'bg-[#0f1115] text-white' : 'bg-slate-50 text-slate-900'}`}>
+                <Loader2 className="animate-spin text-emerald-500 mb-4" size={40} />
+                <p className="text-sm font-bold opacity-50 uppercase tracking-widest">Awaiting Synchronization...</p>
+                <button onClick={onBack} className="mt-8 text-xs font-bold uppercase tracking-widest text-slate-500 hover:text-emerald-500 transition-colors">Abort Terminal</button>
             </div>
         );
     }
@@ -96,6 +121,12 @@ const FulfillmentView: React.FC<FulfillmentViewProps> = ({ onBack, isDarkMode })
                 <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 border border-emerald-500/20">
                     <QrCode size={18} />
                 </div>
+                <button
+                    onClick={() => activeOrder && onOpenChat(activeOrder)}
+                    className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-500 border border-indigo-500/20"
+                >
+                    <MessageSquare size={18} />
+                </button>
             </header>
 
             {/* Main Scrollable Content */}
@@ -169,14 +200,14 @@ const FulfillmentView: React.FC<FulfillmentViewProps> = ({ onBack, isDarkMode })
                                 key={item.id}
                                 onClick={() => toggleItem(item.id)}
                                 className={`p-5 rounded-[1.8rem] border flex items-center justify-between transition-all cursor-pointer active:scale-95 ${pickedItems.has(item.id)
-                                        ? 'bg-emerald-500/10 border-emerald-500/40 shadow-lg shadow-emerald-500/5'
-                                        : isDarkMode ? 'bg-[#121418]/60 border-slate-800 backdrop-blur-sm' : 'bg-white border-slate-200'
+                                    ? 'bg-emerald-500/10 border-emerald-500/40 shadow-lg shadow-emerald-500/5'
+                                    : isDarkMode ? 'bg-[#121418]/60 border-slate-800 backdrop-blur-sm' : 'bg-white border-slate-200'
                                     }`}
                             >
                                 <div className="flex items-center gap-4">
                                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm border transition-all ${pickedItems.has(item.id)
-                                            ? 'bg-emerald-500 text-white border-emerald-400'
-                                            : isDarkMode ? 'bg-slate-900 border-slate-800 text-slate-500' : 'bg-slate-50 border-slate-200 text-slate-600'
+                                        ? 'bg-emerald-500 text-white border-emerald-400'
+                                        : isDarkMode ? 'bg-slate-900 border-slate-800 text-slate-500' : 'bg-slate-50 border-slate-200 text-slate-600'
                                         }`}>
                                         {pickedItems.has(item.id) ? <CheckCircle2 size={18} /> : item.quantity}
                                     </div>
@@ -237,8 +268,8 @@ const FulfillmentView: React.FC<FulfillmentViewProps> = ({ onBack, isDarkMode })
                     onClick={handleConfirm}
                     disabled={!allPicked}
                     className={`w-full py-5 rounded-3xl font-black text-xs uppercase tracking-[0.4em] flex items-center justify-center gap-4 transition-all shadow-2xl relative overflow-hidden group ${allPicked
-                            ? 'bg-emerald-600 text-white shadow-emerald-500/30 active:scale-[0.97]'
-                            : 'bg-slate-800/50 text-slate-600 cursor-not-allowed border border-slate-700/30'
+                        ? 'bg-emerald-600 text-white shadow-emerald-500/30 active:scale-[0.97]'
+                        : 'bg-slate-800/50 text-slate-600 cursor-not-allowed border border-slate-700/30'
                         }`}
                 >
                     {allPicked && (

@@ -8,6 +8,12 @@ interface InventoryProps {
   onSelectProduct: (product: any) => void;
 }
 
+const getImageUrl = (url: string | null) => {
+  if (!url) return null;
+  if (url.startsWith('http')) return url;
+  return `http://localhost:5000${url.startsWith('/') ? '' : '/'}${url}`;
+};
+
 export const Inventory: React.FC<InventoryProps> = ({ isDarkMode, onAddProduct, onSelectProduct }) => {
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -103,8 +109,12 @@ export const Inventory: React.FC<InventoryProps> = ({ isDarkMode, onAddProduct, 
                 <tr key={item.id} className={`transition-colors group ${isDarkMode ? 'hover:bg-slate-800/30' : 'hover:bg-slate-50'}`}>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <div className={`h-10 w-10 rounded-lg flex items-center justify-center transition-colors ${isDarkMode ? 'bg-slate-800 text-slate-500' : 'bg-slate-100 text-slate-400'}`}>
-                        <Package size={20} />
+                      <div className={`h-10 w-10 rounded-lg flex items-center justify-center transition-colors overflow-hidden ${isDarkMode ? 'bg-slate-800 text-slate-500' : 'bg-slate-100 text-slate-400'}`}>
+                        {item.image_url ? (
+                          <img src={getImageUrl(item.image_url) || ''} alt={item.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <Package size={20} />
+                        )}
                       </div>
                       <div>
                         <p className={`text-sm font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{item.name}</p>
@@ -222,8 +232,12 @@ export const ProductDetailModal: React.FC<{ product: any, onClose: () => void, i
         }`}>
         <div className="px-10 pt-10 pb-6 flex items-center justify-between">
           <div className="flex items-center gap-5">
-            <div className={`p-4 rounded-2xl border transition-colors ${isDarkMode ? 'bg-blue-500/10 border-blue-500/20' : 'bg-blue-50 border-blue-100'}`}>
-              <Package className="text-blue-500" size={32} />
+            <div className={`p-4 rounded-2xl border transition-colors overflow-hidden ${isDarkMode ? 'bg-blue-500/10 border-blue-500/20' : 'bg-blue-50 border-blue-100'}`}>
+              {product.image_url ? (
+                <img src={getImageUrl(product.image_url)} alt={product.name} className="w-8 h-8 object-cover rounded-lg" />
+              ) : (
+                <Package className="text-blue-500" size={32} />
+              )}
             </div>
             <div>
               <h2 className={`text-2xl font-bold tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>{product.name}</h2>

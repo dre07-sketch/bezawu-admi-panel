@@ -16,11 +16,15 @@ router.get('/orders-get', authMiddleware, async (req, res) => {
                 u.name as "customerName",
                 o.status,
                 o.total_price as "totalPrice",
+                o.vehicle_type,
+                o.vehicle_plate,
+                o.vehicle_color,
                 o.car_model,
                 o.car_color,
                 o.car_plate,
                 o.created_at as "timestamp",
                 o.arrived_at as "arrivedAt",
+                o.is_gift,
                 EXTRACT(EPOCH FROM o.handover_time) as "handoverTimeSeconds",
                 COALESCE(
                     json_agg(
@@ -62,25 +66,29 @@ router.get('/orders-get', authMiddleware, async (req, res) => {
             return res.json([]);
         }
 
-        text += ` GROUP BY o.id, u.name, o.status, o.total_price, o.car_model, o.car_color, o.car_plate, o.created_at, o.arrived_at, o.handover_time ORDER BY o.created_at DESC`;
+        text += ` GROUP BY o.id, u.name, o.status, o.total_price, o.car_model, o.car_color, o.car_plate, o.vehicle_type, o.vehicle_plate, o.vehicle_color, o.created_at, o.arrived_at, o.handover_time, o.is_gift ORDER BY o.created_at DESC`;
 
         const result = await query(text, params);
 
-        const orders = result.rows.map(row => ({
-            id: row.id,
-            customerName: row.customerName || 'Unknown',
-            status: row.status,
-            totalPrice: parseFloat(row.totalPrice),
-            car: {
-                model: row.car_model || 'Unknown',
-                color: row.car_color || 'Gray',
-                plate: row.car_plate || 'N/A'
-            },
-            timestamp: row.timestamp,
-            items: Array.isArray(row.items) ? row.items : [],
-            arrivedAt: row.arrivedAt,
-            handoverTimeSeconds: row.handoverTimeSeconds ? parseFloat(row.handoverTimeSeconds) : null
-        }));
+        const orders = result.rows.map(row => {
+            const isPrivate = !row.vehicle_type || row.vehicle_type === 'private';
+            return {
+                id: row.id,
+                customerName: row.customerName || 'Unknown',
+                status: row.status,
+                totalPrice: parseFloat(row.totalPrice),
+                car: {
+                    model: isPrivate ? (row.car_model || 'Unknown') : row.vehicle_type,
+                    color: isPrivate ? (row.car_color || 'Gray') : (row.vehicle_color || 'Gray'),
+                    plate: isPrivate ? (row.car_plate || 'N/A') : (row.vehicle_plate || 'N/A')
+                },
+                timestamp: row.timestamp,
+                items: Array.isArray(row.items) ? row.items : [],
+                arrivedAt: row.arrivedAt,
+                isGift: row.is_gift || false,
+                handoverTimeSeconds: row.handoverTimeSeconds ? parseFloat(row.handoverTimeSeconds) : null
+            };
+        });
 
 
 
@@ -137,8 +145,8 @@ router.patch('/:id/status', [
         if (status === 'ARRIVED') {
             updateQuery += ', arrived_at = COALESCE(arrived_at, NOW())';
         } else if (['COMPLETED', 'VERIFIED', 'GIVEN'].includes(status)) {
-            // Update completed_at and calculate handover_time
-            updateQuery += ', completed_at = NOW(), handover_time = CASE WHEN arrived_at IS NOT NULL THEN NOW() - arrived_at ELSE handover_time END';
+            // Update completed_at only
+            updateQuery += ', completed_at = NOW()';
         }
 
         updateQuery += ' WHERE id = $' + (queryParams.length + 1) + ' RETURNING *';
@@ -207,10 +215,14 @@ router.get('/arrivals-get', authMiddleware, async (req, res) => {
                 u.name as "customerName",
                 o.status,
                 o.total_price as "totalPrice",
+                o.vehicle_type,
+                o.vehicle_plate,
+                o.vehicle_color,
                 o.car_model,
                 o.car_color,
                 o.car_plate,
                 o.arrived_at as "arrivedAt",
+                o.is_gift,
                 EXTRACT(EPOCH FROM o.handover_time) as "handoverTimeSeconds",
                 COALESCE(
                     json_agg(
@@ -241,24 +253,28 @@ router.get('/arrivals-get', authMiddleware, async (req, res) => {
             params.push(supermarketId);
         }
 
-        text += ` GROUP BY o.id, u.name, o.status, o.total_price, o.car_model, o.car_color, o.car_plate, o.arrived_at, o.handover_time`;
+        text += ` GROUP BY o.id, u.name, o.status, o.total_price, o.car_model, o.car_color, o.car_plate, o.vehicle_type, o.vehicle_plate, o.vehicle_color, o.arrived_at, o.handover_time, o.is_gift`;
 
         const result = await query(text, params);
 
-        const arrivals = result.rows.map(row => ({
-            id: row.id,
-            customerName: row.customerName || 'Unknown',
-            status: row.status,
-            totalPrice: parseFloat(row.totalPrice),
-            car: {
-                model: row.car_model || 'Unknown',
-                color: row.car_color || 'Gray',
-                plate: row.car_plate || 'N/A'
-            },
-            items: row.items,
-            arrivedAt: row.arrivedAt,
-            handoverTimeSeconds: row.handoverTimeSeconds ? parseFloat(row.handoverTimeSeconds) : null
-        }));
+        const arrivals = result.rows.map(row => {
+            const isPrivate = !row.vehicle_type || row.vehicle_type === 'private';
+            return {
+                id: row.id,
+                customerName: row.customerName || 'Unknown',
+                status: row.status,
+                totalPrice: parseFloat(row.totalPrice),
+                car: {
+                    model: isPrivate ? (row.car_model || 'Unknown') : row.vehicle_type,
+                    color: isPrivate ? (row.car_color || 'Gray') : (row.vehicle_color || 'Gray'),
+                    plate: isPrivate ? (row.car_plate || 'N/A') : (row.vehicle_plate || 'N/A')
+                },
+                items: row.items,
+                arrivedAt: row.arrivedAt,
+                isGift: row.is_gift || false,
+                handoverTimeSeconds: row.handoverTimeSeconds ? parseFloat(row.handoverTimeSeconds) : null
+            };
+        });
 
         res.json(arrivals);
     } catch (err) {

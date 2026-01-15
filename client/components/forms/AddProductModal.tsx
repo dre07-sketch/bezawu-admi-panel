@@ -65,27 +65,40 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ onClose, onAddCategor
 
     const [categories, setCategories] = useState<Category[]>([]);
     const [loading, setLoading] = useState(false);
+    const [catLoading, setCatLoading] = useState(false);
     const [mediaFile, setMediaFile] = useState<File | null>(null);
     const [error, setError] = useState('');
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const token = localStorage.getItem('token');
-                const headers = { 'Authorization': `Bearer ${token}` };
+    const fetchCategories = async () => {
+        setCatLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            const headers = { 'Authorization': `Bearer ${token}` };
 
-                // Fetch categories
-                const catRes = await fetch('http://localhost:5000/api/categories/categories-get', { headers });
-                if (catRes.ok) {
-                    const catData = await catRes.json();
-                    setCategories(catData);
-                    if (catData.length > 0) setFormData(prev => ({ ...prev, category_id: catData[0].id }));
+            // Fetch categories
+            const catRes = await fetch('http://localhost:5000/api/categories/categories-get', { headers });
+            if (catRes.ok) {
+                const catData = await catRes.json();
+                setCategories(catData);
+
+                // If there's a category and none selected, or selected one is missing, select the first one
+                if (catData.length > 0) {
+                    const currentId = formData.category_id;
+                    const exists = catData.find((c: Category) => c.id.toString() === currentId);
+                    if (!currentId || !exists) {
+                        setFormData(prev => ({ ...prev, category_id: catData[0].id.toString() }));
+                    }
                 }
-            } catch (error) {
-                console.error('Error fetching data:', error);
             }
-        };
-        fetchData();
+        } catch (error) {
+            console.error('Error fetching categories:', error);
+        } finally {
+            setCatLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchCategories();
     }, []);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -126,14 +139,14 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ onClose, onAddCategor
                 body: JSON.stringify({
                     name: formData.name,
                     price: parseFloat(formData.price),
-                    category_id: parseInt(formData.category_id, 10),
+                    category_id: formData.category_id ? parseInt(formData.category_id, 10) : null,
 
-                    description: '', // Reset description or use a real description field if UI had one
+                    description: '',
                     sku: `SKU-${Math.floor(Math.random() * 10000)}`,
                     image_url: imageUrl,
                     unit: formData.unit,
-                    stock: parseFloat(formData.stock) || 0
-                    // branch_id is automatically assigned by backend from req.user
+                    stock_quantity: parseFloat(formData.stock) || 0,
+                    stock: parseFloat(formData.stock) || 0 // Added for backward compatibility
                 }),
             });
 
@@ -234,9 +247,18 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ onClose, onAddCategor
 
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                    <Layers size={12} /> Category
-                                </label>
+                                <div className="flex items-center justify-between">
+                                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                        <Layers size={12} /> Category
+                                    </label>
+                                    <button
+                                        type="button"
+                                        onClick={fetchCategories}
+                                        className="text-[9px] font-bold text-emerald-500 hover:text-emerald-400 uppercase tracking-widest flex items-center gap-1"
+                                    >
+                                        <Loader2 size={10} className={catLoading ? "animate-spin" : ""} /> Refresh
+                                    </button>
+                                </div>
                                 <select
                                     required
                                     className={`w-full px-6 py-3 rounded-2xl border transition-all focus:outline-none ${isDarkMode ? 'bg-[#0f1115] border-slate-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'}`}

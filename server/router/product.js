@@ -7,7 +7,7 @@ const authMiddleware = require('../middleware/auth');
 // Get all products
 router.get('/products-get', authMiddleware, async (req, res) => {
     try {
-        const { branchId, supermarketId } = req.user;
+        const { branchId, supermarketId, role } = req.user;
 
         let text = `
             SELECT 
@@ -15,24 +15,25 @@ router.get('/products-get', authMiddleware, async (req, res) => {
                 p.name,
                 p.price,
                 p.category_id,
-                c.name as category_name,
+                c.name as cat_name,
                 p.image_url,
                 p.sku,
                 p.description,
                 p.is_fasting,
                 p.unit,
-                p.unit,
                 p.discount_price,
                 p.branch_id,
                 p.stock_quantity
             FROM products p
-            LEFT JOIN categories c ON p.category_id = c.id
-            LEFT JOIN branches b ON p.branch_id = b.id
+            LEFT JOIN categories c ON p.category_id::text = c.id::text
+            LEFT JOIN branches b ON p.branch_id::text = b.id::text
             WHERE 1=1
         `;
 
         const params = [];
-        if (branchId) {
+        if (role === 'SUPER_ADMIN' || role === 'ADMIN') {
+            // No filters
+        } else if (branchId) {
             text += ` AND p.branch_id = $${params.length + 1}`;
             params.push(branchId);
         } else if (supermarketId) {
@@ -47,8 +48,8 @@ router.get('/products-get', authMiddleware, async (req, res) => {
         const products = result.rows.map(row => ({
             id: row.id,
             name: row.name,
-            category: row.category_name || 'Uncategorized',
-            category: row.category_name || 'Uncategorized',
+            category: row.cat_name || (row.category_id ? `Category ${row.category_id}` : 'Uncategorized'),
+            category_id: row.category_id,
             price: parseFloat(row.price),
             stock: row.stock_quantity || 0,
             status: (row.stock_quantity || 0) > 10 ? 'In Stock' : (row.stock_quantity || 0) > 0 ? 'Low Stock' : 'Out of Stock',
@@ -76,7 +77,7 @@ router.post('/products-post', [
         return res.status(400).json({ errors: errors.array() });
     }
 
-    const { name, category_id, price, description, sku, image_url, unit, branch_id: bodyBranchId } = req.body;
+    const { name, category_id, price, description, sku, image_url, unit, stock, stock_quantity, branch_id: bodyBranchId } = req.body;
     const { branchId: userBranchId, supermarketId } = req.user;
 
     const targetBranchId = bodyBranchId || userBranchId;
@@ -103,17 +104,11 @@ router.post('/products-post', [
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
             RETURNING *
         `;
-        // Assuming the incoming 'description' might contain stock info, but for cleaner data we use stock_quantity locally
-        // We can extract stock from description if needed, or assume a default. 
-        // But better: use a default 0 if not provided.
-        // Wait, the client sends 'stock' if we look at AddProductModal?
-        // Let's check AddProductModal in Step 178: "description: 'Stock level: ...'". It does NOT send a 'stock' field in body.
-        // It sends `description: Stock level: ${formData.stock}`.
-        // So we need to parse it or just default to 0. 
-        // ACTUALLY, I should update the POST to accept `stock` properly now.
-        // But first, let's fix the INSERT to use a value.
-        // I will default to 0 for now to avoid breaking existing requests unless I update client first.
-        const values = [name, category_id, price, description, sku, image_url, unit, targetBranchId, 0];
+
+        // Handle both 'stock' and 'stock_quantity' for compatibility
+        const finalStock = stock_quantity !== undefined ? stock_quantity : (stock !== undefined ? stock : 0);
+
+        const values = [name, category_id, price, description, sku, image_url, unit, targetBranchId, finalStock];
 
         const result = await query(text, values);
         res.status(201).json(result.rows[0]);

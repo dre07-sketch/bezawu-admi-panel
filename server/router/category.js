@@ -8,21 +8,29 @@ const authMiddleware = require('../middleware/auth');
 // Get all categories (filtered by user's supermarket/branch)
 router.get('/categories-get', authMiddleware, async (req, res) => {
     try {
-        const branch_id = req.user.branchId;
-        const supermarket_id = req.user.supermarketId;
+        const { branchId, supermarketId, role } = req.user;
 
-        // Fetch categories that:
-        // 1. Belong to this specific branch
-        // 2. Belong to the parent supermarket (global for that supermarket)
-        // 3. Are completely global (branch_id and supermarket_id are null)
-        const text = `
-            SELECT * FROM categories 
-            WHERE branch_id = $1 
-               OR supermarket_id = $2 
-               OR (branch_id IS NULL AND supermarket_id IS NULL)
-            ORDER BY name ASC
-        `;
-        const result = await query(text, [branch_id, supermarket_id]);
+        let text = 'SELECT * FROM categories WHERE 1=1';
+        const params = [];
+
+        // If Super Admin, show everything
+        if (role === 'SUPER_ADMIN' || role === 'ADMIN') {
+            // No filters
+        } else if (branchId) {
+            // Branch Admin: sees branch-specific, supermarket-global, and system-global
+            text += ' AND (branch_id = $1 OR supermarket_id = $2 OR (branch_id IS NULL AND supermarket_id IS NULL))';
+            params.push(branchId, supermarketId);
+        } else if (supermarketId) {
+            // Supermarket Admin: sees all categories in their supermarket + global
+            text += ' AND (supermarket_id = $1 OR (branch_id IS NULL AND supermarket_id IS NULL))';
+            params.push(supermarketId);
+        } else {
+            // Global/Other: only see truly global categories
+            text += ' AND (branch_id IS NULL AND supermarket_id IS NULL)';
+        }
+
+        text += ' ORDER BY name ASC';
+        const result = await query(text, params);
         res.json(result.rows);
     } catch (err) {
         console.error('Error fetching categories:', err);

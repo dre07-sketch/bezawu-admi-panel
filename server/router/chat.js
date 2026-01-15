@@ -23,7 +23,7 @@ router.get('/:orderId', authMiddleware, async (req, res) => {
 // Send a message (Admin side)
 router.post('/:orderId', [
     authMiddleware,
-    param('orderId', 'Invalid Order ID').isUUID(),
+    param('orderId', 'Invalid Order ID').notEmpty().isString(),
     check('message', 'Message is required').not().isEmpty().trim().escape()
 ], async (req, res) => {
     const errors = validationResult(req);

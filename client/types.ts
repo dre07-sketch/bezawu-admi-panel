@@ -1,11 +1,15 @@
 
 export enum OrderStatus {
   PENDING = 'PENDING',
+  ACCEPTED = 'ACCEPTED',
   PREPARING = 'PREPARING',
   READY = 'READY',
+  READY_FOR_PICKUP = 'READY_FOR_PICKUP',
   ARRIVED = 'ARRIVED',
   COMPLETED = 'COMPLETED',
-  CANCELLED = 'CANCELLED'
+  CANCELLED = 'CANCELLED',
+  VERIFIED = 'VERIFIED',
+  GIVEN = 'GIVEN'
 }
 
 export enum BranchStatus {
@@ -165,3 +169,17 @@ export interface Ad {
   created_at: string;
   status_derived?: string;
 }
+
+export interface Runner {
+  id: string;
+  branch_id: string;
+  supermarket_id: string;
+  full_name: string;
+  phone: string;
+  email: string;
+  status: 'ACTIVE' | 'INACTIVE';
+  pro_image: string;
+  last_active: string;
+  created_at: string;
+}
+

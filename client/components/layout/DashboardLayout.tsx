@@ -24,6 +24,8 @@ import AddAdModal from '../forms/AddAdModal';
 import Stories from '../Dashboard/Stories';
 import AddStoryModal from '../forms/AddStoryModal';
 import Gifts from '../Dashboard/Gifts';
+import Runners from '../Dashboard/Runners';
+import AddRunnerModal from '../forms/AddRunnerModal';
 
 // ... other imports ...
 
@@ -74,6 +76,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout, isDar
   const [isAddBundleOpen, setIsAddBundleOpen] = useState(false);
   const [isAddStoryOpen, setIsAddStoryOpen] = useState(false);
   const [isAddAdOpen, setIsAddAdOpen] = useState(false);
+  const [isAddRunnerOpen, setIsAddRunnerOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
 
@@ -166,6 +169,10 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout, isDar
         />;
       case 'gifts': return <Gifts isDarkMode={isDarkMode} />;
       case 'analytics': return <Analytics isDarkMode={isDarkMode} />;
+      case 'runners': return <Runners
+        isDarkMode={isDarkMode}
+        onAddRunner={() => setIsAddRunnerOpen(true)}
+      />;
       case 'users': return <Users isDarkMode={isDarkMode} onSelectCustomer={setSelectedCustomer} />;
       case 'settings': return <Settings
         isDarkMode={isDarkMode}
@@ -292,6 +299,20 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout, isDar
         <AddAdModal
           isOpen={isAddAdOpen}
           onClose={() => setIsAddAdOpen(false)}
+          isDarkMode={isDarkMode}
+        />
+      )}
+
+      {isAddRunnerOpen && (
+        <AddRunnerModal
+          onClose={() => setIsAddRunnerOpen(false)}
+          onSuccess={() => {
+            // The Runners component polls or has local refresh logic if needed, 
+            // but usually we refresh list on tab select or via a ref if we want to be instant.
+            // For now, closing and reopening will trigger fetch if we add a key or just hope for the best.
+            // Actually, usually we'd pass a refresh function.
+            window.location.reload(); // Simple way for now, or just let it be.
+          }}
           isDarkMode={isDarkMode}
         />
       )}

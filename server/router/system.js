@@ -17,4 +17,21 @@ router.get('/status', async (req, res) => {
     }
 });
 
+// Route to fetch commission rate
+router.get('/commission', async (req, res) => {
+    try {
+        const result = await query("SELECT value FROM system WHERE name = 'commission_rate'");
+        if (result.rows.length > 0) {
+            res.json({ commission_rate: result.rows[0].value });
+        } else {
+            // Defaulting to 0.05 if not found, as per previous logic mentioned in conversation history
+            res.json({ commission_rate: '0.05' });
+        }
+    } catch (err) {
+        console.error('[System API] Error fetching commission rate:', err);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
+});
+
 module.exports = router;
+

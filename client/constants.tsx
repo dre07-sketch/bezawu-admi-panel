@@ -12,7 +12,8 @@ import {
   Users as UsersIcon,
   Gift,
   Film,
-  Image as ImageIcon
+  Image as ImageIcon,
+  UserCheck
 } from 'lucide-react';
 import { OrderStatus } from './types';
 
@@ -33,15 +34,20 @@ export const NAVIGATION = [
   { name: 'App Ads', icon: <ImageIcon size={20} />, id: 'ads' },
   { name: 'Performance', icon: <BarChart3 size={20} />, id: 'analytics' },
   { name: 'Feedback', icon: <MessageSquare size={20} />, id: 'feedback' },
+  { name: 'Runners', icon: <UserCheck size={20} />, id: 'runners' },
   { name: 'Users', icon: <UsersIcon size={20} />, id: 'users' },
   { name: 'Settings', icon: <Settings size={20} />, id: 'settings' },
 ];
 
 export const STATUS_MAP: Record<OrderStatus, { label: string; color: string; icon: React.ReactNode }> = {
   [OrderStatus.PENDING]: { label: 'Pending', color: 'text-slate-400', icon: <Clock size={16} /> },
+  [OrderStatus.ACCEPTED]: { label: 'Accepted', color: 'text-indigo-400', icon: <CheckCircle2 size={16} /> },
   [OrderStatus.PREPARING]: { label: 'Preparing', color: 'text-emerald-400', icon: <ShoppingBag size={16} /> },
   [OrderStatus.READY]: { label: 'Ready', color: 'text-blue-400', icon: <Package size={16} /> },
+  [OrderStatus.READY_FOR_PICKUP]: { label: 'Ready For Pickup', color: 'text-cyan-400', icon: <Package size={16} /> },
   [OrderStatus.ARRIVED]: { label: 'Customer Arrived', color: 'text-orange-400', icon: <AlertCircle size={16} /> },
   [OrderStatus.COMPLETED]: { label: 'Completed', color: 'text-emerald-500', icon: <CheckCircle2 size={16} /> },
   [OrderStatus.CANCELLED]: { label: 'Cancelled', color: 'text-rose-400', icon: <AlertCircle size={16} /> },
+  [OrderStatus.VERIFIED]: { label: 'Verified', color: 'text-teal-400', icon: <CheckCircle2 size={16} /> },
+  [OrderStatus.GIVEN]: { label: 'Given', color: 'text-sky-400', icon: <Package size={16} /> },
 };

@@ -1,6 +1,5 @@
-
-import React from 'react';
-import { Bell, Search, Activity, User as UserIcon, Sun, Moon } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Bell, Search, Activity, User as UserIcon, Sun, Moon, Percent } from 'lucide-react';
 import { User } from '../../types';
 
 interface HeaderProps {
@@ -12,23 +11,53 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = ({ user, isBusy, onToggleBusy, isDarkMode, onToggleTheme }) => {
+  const [commissionRate, setCommissionRate] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchCommission = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/system/commission');
+        if (response.ok) {
+          const data = await response.json();
+          setCommissionRate(data.commission_rate);
+        }
+      } catch (err) {
+        console.error('Failed to fetch commission rate:', err);
+      }
+    };
+    fetchCommission();
+  }, []);
+
   return (
     <header className={`h-16 border-b px-8 flex items-center justify-between sticky top-0 z-20 backdrop-blur-xl transition-all duration-300 ${isDarkMode ? 'bg-[#0f1115]/80 border-slate-800' : 'bg-white/90 border-slate-200 shadow-sm'
       }`}>
       <div className="flex items-center gap-6">
-        <div>
-          <div className="flex items-center gap-3 mb-1">
-            <div className={`h-3 w-px ${isDarkMode ? 'bg-slate-800' : 'bg-slate-200'}`}></div>
-            <h2 className={`text-xl font-black uppercase tracking-tighter leading-none ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
-              {user.branchName} branch
-            </h2>
+        <div className="flex items-center gap-4">
+          <div>
+            <div className="flex items-center gap-3 mb-1">
+              <div className={`h-3 w-px ${isDarkMode ? 'bg-slate-800' : 'bg-slate-200'}`}></div>
+              <h2 className={`text-xl font-black uppercase tracking-tighter leading-none ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                {user.branchName} branch
+              </h2>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className={`h-1.5 w-1.5 rounded-full ${isBusy ? 'bg-red-500' : 'bg-emerald-500'} animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]`}></div>
+              <span className={`text-[9px] font-black uppercase tracking-[0.2em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                {isBusy ? 'Operational Constraint' : 'Hub Online'}
+              </span>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <div className={`h-1.5 w-1.5 rounded-full ${isBusy ? 'bg-red-500' : 'bg-emerald-500'} animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]`}></div>
-            <span className={`text-[9px] font-black uppercase tracking-[0.2em] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
-              {isBusy ? 'Operational Constraint' : 'Hub Online'}
-            </span>
-          </div>
+
+          {commissionRate && (
+            <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border animate-in fade-in slide-in-from-left-4 duration-500 ${isDarkMode ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' : 'bg-emerald-50 border-emerald-100 text-emerald-700'
+              }`}>
+              <Percent size={12} className="animate-pulse" />
+              <div className="flex flex-col">
+                <span className="text-[10px] font-black leading-none uppercase tracking-widest">Commission Rate</span>
+                <span className="text-xs font-black">{(parseFloat(commissionRate) ).toFixed(1)}%</span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -67,7 +96,7 @@ const Header: React.FC<HeaderProps> = ({ user, isBusy, onToggleBusy, isDarkMode,
             <span className="text-[10px] font-black uppercase tracking-tighter">Busy</span>
           </button>
 
-        
+
 
           <div className={`h-6 w-px mx-1 ${isDarkMode ? 'bg-slate-800' : 'bg-slate-200'}`}></div>
 
@@ -88,3 +117,4 @@ const Header: React.FC<HeaderProps> = ({ user, isBusy, onToggleBusy, isDarkMode,
 };
 
 export default Header;
+

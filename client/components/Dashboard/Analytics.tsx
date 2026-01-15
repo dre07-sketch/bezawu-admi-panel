@@ -399,37 +399,6 @@ const Analytics: React.FC<AnalyticsProps> = ({ isDarkMode }) => {
           </div>
         </div>
 
-        {/* Service Efficiency Chart (NEW) */}
-        <div className={`border p-8 rounded-[2.5rem] transition-colors ${isDarkMode ? 'bg-[#121418] border-slate-800' : 'bg-white border-slate-200 shadow-sm'
-          }`}>
-          <div className="flex justify-between items-center mb-8">
-            <div>
-              <h3 className={`text-xl font-black ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>Service Efficiency</h3>
-              <p className="text-[10px] text-slate-500 mt-1 uppercase tracking-widest font-black">Avg. Handover Time Trend (Seconds)</p>
-            </div>
-            <div className="bg-blue-500/10 p-3 rounded-2xl text-blue-500">
-              <Clock size={24} />
-            </div>
-          </div>
-          <div className="h-[250px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={data.hourlyData}>
-                <defs>
-                  <linearGradient id="colorWait" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? "#1e293b" : "#e2e8f0"} vertical={false} />
-                <XAxis dataKey="time" stroke="#475569" fontSize={10} tickLine={false} axisLine={false} />
-                <YAxis stroke="#475569" fontSize={10} tickLine={false} axisLine={false} unit="s" />
-                <Tooltip content={<CustomTooltip isDarkMode={isDarkMode} />} />
-                <Area type="monotone" dataKey="wait" stroke="#3b82f6" strokeWidth={4} fill="url(#colorWait)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
         {/* Key Highlights */}
         <div className={`border p-8 rounded-[2.5rem] transition-colors ${isDarkMode ? 'bg-[#121418] border-slate-800' : 'bg-white border-slate-200 shadow-sm'
           } lg:col-span-1`}>
@@ -508,7 +477,11 @@ const Analytics: React.FC<AnalyticsProps> = ({ isDarkMode }) => {
 
             <div className="grid grid-cols-2 gap-6 relative z-10">
               <div className="group/stat">
-                <h4 className={`text-3xl font-black ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{(parseInt(data.mix?.stories?.totalLikes || '0') / 1000).toFixed(1)}k</h4>
+                <h4 className={`text-3xl font-black ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                  {parseInt(data.mix?.stories?.totalLikes || '0') >= 1000
+                    ? (parseInt(data.mix?.stories?.totalLikes || '0') / 1000).toFixed(1) + 'k'
+                    : data.mix?.stories?.totalLikes || '0'}
+                </h4>
                 <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mt-1 group-hover/stat:text-pink-500 transition-colors">Net Likes</p>
               </div>
               <div className="group/stat">

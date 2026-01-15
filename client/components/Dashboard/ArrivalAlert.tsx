@@ -87,12 +87,7 @@ const ArrivalAlert: React.FC<ArrivalAlertProps> = ({ order, onClose, onComplete,
             >
               NOT NOW
             </button>
-            <button
-              onClick={onComplete}
-              className="bg-green-500 hover:bg-green-600 text-white font-bold py-5 rounded-2xl text-sm tracking-widest uppercase shadow-[0_10px_30_rgba(34,197,94,0.4)] transition-all transform active:scale-[0.98]"
-            >
-              CONFIRM HANDOVER
-            </button>
+           
           </div>
         </div>
       </div>

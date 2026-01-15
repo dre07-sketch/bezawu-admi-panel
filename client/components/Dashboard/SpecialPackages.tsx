@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Package, Plus, Search, Trash2, Power, TrendingUp, Sparkles, Loader2, X, Tag, Zap, Shield, Activity, ChevronRight, Star, Clock, BarChart3, PackageOpen, ArrowUpRight, Filter } from 'lucide-react';
+import { Package, Plus, Search, Trash2, Power, TrendingUp, Sparkles, Loader2, X, Tag, Zap, Shield, Activity, ChevronRight, Clock, BarChart3, PackageOpen, ArrowUpRight, Filter } from 'lucide-react';
 import { Bundle } from '../../types';
 
 interface SpecialPackagesProps {
@@ -216,11 +216,7 @@ const SpecialPackages: React.FC<SpecialPackagesProps> = ({ isDarkMode, onAddPack
                                                         <div className={`w-1.5 h-1.5 rounded-full ${bundle.is_active ? 'bg-emerald-500' : 'bg-slate-500'}`} />
                                                         {bundle.is_active ? 'Active' : 'Inactive'}
                                                     </div>
-                                                    <div className="flex items-center gap-1 text-xs font-medium text-amber-500">
-                                                        <Star size={12} fill="currentColor" />
-                                                        <span>4.8</span>
-                                                        <span className="text-slate-400 font-normal">(32)</span>
-                                                    </div>
+
                                                 </div>
                                             </div>
 
@@ -422,20 +418,7 @@ const BundleDetailModal: React.FC<{ bundle: Bundle, onClose: () => void, isDarkM
                                     </div>
                                 )}
 
-                                <div className={`p-4 rounded-xl border ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
-                                    <div className="flex items-center gap-3">
-                                        <div className="p-2 bg-amber-500/20 rounded-lg text-amber-500">
-                                            <Star size={16} fill="currentColor" />
-                                        </div>
-                                        <div>
-                                            <p className="text-xs font-bold text-slate-500">Rating</p>
-                                            <div className="flex items-center gap-1">
-                                                <p className={`text-sm font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>4.8</p>
-                                                <span className="text-[10px] text-slate-500 font-bold">(32 reviews)</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+
 
                                 <div className={`p-4 rounded-xl border ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'}`}>
                                     <div className="flex items-center gap-3">

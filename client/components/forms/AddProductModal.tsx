@@ -76,7 +76,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ onClose, onAddCategor
             const headers = { 'Authorization': `Bearer ${token}` };
 
             // Fetch categories
-            const catRes = await fetch('http://localhost:5000/api/categories/categories-get', { headers });
+            const catRes = await fetch('https://branchapi.ristestate.com/api/categories/categories-get', { headers });
             if (catRes.ok) {
                 const catData = await catRes.json();
                 setCategories(catData);
@@ -118,7 +118,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ onClose, onAddCategor
             if (mediaFile) {
                 const formDataUpload = new FormData();
                 formDataUpload.append('image', mediaFile);
-                const uploadRes = await fetch('http://localhost:5000/api/upload/image', {
+                const uploadRes = await fetch('https://branchapi.ristestate.com/api/upload/image', {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${token}` },
                     body: formDataUpload
@@ -129,7 +129,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ onClose, onAddCategor
                 }
             }
 
-            const response = await fetch('http://localhost:5000/api/products/products-post', {
+            const response = await fetch('https://branchapi.ristestate.com/api/products/products-post', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -139,7 +139,7 @@ const AddProductModal: React.FC<AddProductModalProps> = ({ onClose, onAddCategor
                 body: JSON.stringify({
                     name: formData.name,
                     price: parseFloat(formData.price),
-                    category_id: formData.category_id ? parseInt(formData.category_id, 10) : null,
+                    category_id: formData.category_id || null,
 
                     description: '',
                     sku: `SKU-${Math.floor(Math.random() * 10000)}`,

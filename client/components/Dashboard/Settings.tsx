@@ -56,7 +56,7 @@ const Settings: React.FC<SettingsProps> = ({ isDarkMode, isBusy, onToggleBusy, o
         const fetchProfile = async () => {
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch('http://localhost:5000/api/auth/me', {
+                const response = await fetch('https://branchapi.ristestate.com/api/auth/me', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (response.ok) {
@@ -87,7 +87,7 @@ const Settings: React.FC<SettingsProps> = ({ isDarkMode, isBusy, onToggleBusy, o
 
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:5000/api/settings/change-password', {
+            const response = await fetch('https://branchapi.ristestate.com/api/settings/change-password', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

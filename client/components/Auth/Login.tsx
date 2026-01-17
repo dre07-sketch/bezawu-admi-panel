@@ -23,7 +23,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onForgot }) => {
     setError('');
 
     try {
-      const response = await fetch('http://localhost:5000/api/auth/login', {
+      const response = await fetch('https://branchapi.ristestate.com/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -41,7 +41,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, onForgot }) => {
       localStorage.setItem('token', data.token);
 
       // Fetch full profile info securely
-      const profileResponse = await fetch('http://localhost:5000/api/auth/me', {
+      const profileResponse = await fetch('https://branchapi.ristestate.com/api/auth/me', {
         headers: {
           'Authorization': `Bearer ${data.token}`,
         },

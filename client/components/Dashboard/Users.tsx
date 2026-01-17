@@ -44,7 +44,7 @@ const PurchaseDetailModal: React.FC<{ purchase: CustomerPurchase, onClose: () =>
     const fetchItems = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`http://localhost:5000/api/orders/${purchase.id}/items`, {
+        const response = await fetch(`https://branchapi.ristestate.com/api/orders/${purchase.id}/items`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (response.ok) {
@@ -148,7 +148,7 @@ export const CustomerDetailModal: React.FC<{ customer: Customer, onClose: () => 
     const fetchDetails = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`http://localhost:5000/api/users/${customer.id}/details`, {
+        const response = await fetch(`https://branchapi.ristestate.com/api/users/${customer.id}/details`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (response.ok) {
@@ -175,7 +175,7 @@ export const CustomerDetailModal: React.FC<{ customer: Customer, onClose: () => 
         <div className={`px-10 py-10 flex items-center justify-between border-b relative z-20 ${isDarkMode ? 'bg-[#121418] border-slate-800/80' : 'bg-white border-slate-100'}`}>
           <div className="flex items-center gap-6">
             <div className={`h-16 w-16 rounded-2xl border transition-all overflow-hidden bg-cover bg-center ${isDarkMode ? 'border-green-500/20' : 'border-green-100'}`}
-              style={{ backgroundImage: customer.profilePicture ? `url(http://localhost:5000${customer.profilePicture})` : 'none' }}>
+              style={{ backgroundImage: customer.profilePicture ? `url(https://branchapi.ristestate.com${customer.profilePicture})` : 'none' }}>
               {!customer.profilePicture && (
                 <div className={`w-full h-full flex items-center justify-center ${isDarkMode ? 'bg-green-500/10' : 'bg-[#f0fdf4]'}`}>
                   <UserIcon className="text-green-500" size={32} />
@@ -329,7 +329,7 @@ const Users: React.FC<UsersProps> = ({ isDarkMode, onSelectCustomer }) => {
     try {
       setLoading(true);
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/users/customers-get', {
+      const response = await fetch('https://branchapi.ristestate.com/api/users/customers-get', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {

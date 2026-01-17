@@ -34,7 +34,7 @@ const AddStoryModal: React.FC<AddStoryModalProps> = ({ onClose, isDarkMode }) =>
             const uploadData = new FormData();
             uploadData.append('image', videoFile); // using 'image' field as that's what backend expects currently, although we modified it to accept videos. Ideally rename param but 'image' works if Multer field is 'image'.
 
-            const uploadResponse = await fetch('http://localhost:5000/api/upload/image', {
+            const uploadResponse = await fetch('https://branchapi.ristestate.com/api/upload/image', {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` },
                 body: uploadData
@@ -48,7 +48,7 @@ const AddStoryModal: React.FC<AddStoryModalProps> = ({ onClose, isDarkMode }) =>
             }
 
             // Create Story
-            const response = await fetch('http://localhost:5000/api/stories/stories-post', {
+            const response = await fetch('https://branchapi.ristestate.com/api/stories/stories-post', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

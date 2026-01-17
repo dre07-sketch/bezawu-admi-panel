@@ -25,7 +25,7 @@ router.get('/products-get', authMiddleware, async (req, res) => {
                 p.branch_id,
                 p.stock_quantity
             FROM products p
-            LEFT JOIN categories c ON p.category_id::text = c.id::text
+            LEFT JOIN categories c ON p.category_id = c.id
             LEFT JOIN branches b ON p.branch_id::text = b.id::text
             WHERE 1=1
         `;
@@ -69,7 +69,7 @@ router.post('/products-post', [
     authMiddleware,
     check('name', 'Name is required').not().isEmpty().trim().escape(),
     check('price', 'Price must be a positive number').isFloat({ min: 0 }),
-    check('category_id', 'Category ID must be an integer').optional({ nullable: true }).isInt(),
+    check('category_id').optional({ nullable: true }),
     check('branch_id', 'Branch ID must be a UUID').optional({ nullable: true }).isUUID()
 ], async (req, res) => {
     const errors = validationResult(req);
@@ -111,6 +111,19 @@ router.post('/products-post', [
         const values = [name, category_id, price, description, sku, image_url, unit, targetBranchId, finalStock];
 
         const result = await query(text, values);
+
+        // Audit Log
+        await query(
+            'INSERT INTO audit_logs (admin_id, branch_id, supermarket_id, action, severity) VALUES ($1, $2, $3, $4, $5)',
+            [
+                req.user.id,
+                targetBranchId,
+                supermarketId,
+                `PRODUCT_CREATE: ${name} (${result.rows[0].id})`,
+                'INFO'
+            ]
+        );
+
         res.status(201).json(result.rows[0]);
     } catch (err) {
         console.error('Error creating product:', err);
@@ -157,7 +170,8 @@ router.delete('/:id', authMiddleware, async (req, res) => {
 router.patch('/:id', [
     authMiddleware,
     check('stock', 'Stock must be a non-negative number').optional().isFloat({ min: 0 }),
-    check('price', 'Price must be a positive number').optional().isFloat({ min: 0 })
+    check('price', 'Price must be a positive number').optional().isFloat({ min: 0 }),
+    check('category_id').optional()
 ], async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -225,6 +239,12 @@ router.patch('/:id', [
             idx++;
         }
 
+        if (updates.category_id) {
+            updateFields.push(`category_id = $${idx}`);
+            updateValues.push(updates.category_id);
+            idx++;
+        }
+
         if (updateFields.length === 0) {
             return res.status(400).json({ message: 'No fields to update' });
         }
@@ -233,7 +253,37 @@ router.patch('/:id', [
         const updateQuery = `UPDATE products SET ${updateFields.join(', ')} WHERE id = $${idx} RETURNING *`;
 
         const result = await query(updateQuery, updateValues);
-        res.json(result.rows[0]);
+        const updatedProduct = result.rows[0];
+
+        // 1. Log Price Change (Significant Action)
+        if (updates.price !== undefined) {
+            await query(
+                'INSERT INTO audit_logs (admin_id, branch_id, supermarket_id, action, severity) VALUES ($1, $2, $3, $4, $5)',
+                [
+                    req.user.id,
+                    req.user.branchId,
+                    req.user.supermarketId,
+                    `PRODUCT_PRICE_CHANGE: ${updatedProduct.name} (${id}) -> ${updates.price} ETB`,
+                    'WARNING'
+                ]
+            );
+        }
+
+        // 2. Log Stock Adjustment (Routine Action)
+        if (updates.stock !== undefined) {
+            await query(
+                'INSERT INTO audit_logs (admin_id, branch_id, supermarket_id, action, severity) VALUES ($1, $2, $3, $4, $5)',
+                [
+                    req.user.id,
+                    req.user.branchId,
+                    req.user.supermarketId,
+                    `PRODUCT_STOCK_ADJUST: ${updatedProduct.name} (${id}) -> ${updates.stock}`,
+                    'INFO'
+                ]
+            );
+        }
+
+        res.json(updatedProduct);
 
     } catch (err) {
         console.error('Error updating product:', err);

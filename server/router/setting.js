@@ -41,6 +41,19 @@ router.patch('/toggle-busy', authMiddleware, async (req, res) => {
 
         await query('UPDATE branches SET is_busy = $1 WHERE id = $2', [isBusy, branchId]);
 
+        if (isBusy) {
+            await query(
+                'INSERT INTO audit_logs (admin_id, branch_id, supermarket_id, action, severity) VALUES ($1, $2, $3, $4, $5)',
+                [
+                    req.user.id,
+                    req.user.branchId,
+                    req.user.supermarketId,
+                    'BRANCH_BUSY_ON',
+                    'WARNING'
+                ]
+            );
+        }
+
         res.json({ message: `Branch status updated to ${isBusy ? 'Busy' : 'Available'}`, isBusy });
     } catch (err) {
         console.error('[Settings API] Toggle Busy Error:', err);

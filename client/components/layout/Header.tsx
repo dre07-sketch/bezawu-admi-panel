@@ -16,7 +16,7 @@ const Header: React.FC<HeaderProps> = ({ user, isBusy, onToggleBusy, isDarkMode,
   useEffect(() => {
     const fetchCommission = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/system/commission');
+        const response = await fetch('https://branchapi.ristestate.com/api/system/commission');
         if (response.ok) {
           const data = await response.json();
           setCommissionRate(data.commission_rate);
@@ -54,7 +54,7 @@ const Header: React.FC<HeaderProps> = ({ user, isBusy, onToggleBusy, isDarkMode,
               <Percent size={12} className="animate-pulse" />
               <div className="flex flex-col">
                 <span className="text-[10px] font-black leading-none uppercase tracking-widest">Commission Rate</span>
-                <span className="text-xs font-black">{(parseFloat(commissionRate) ).toFixed(1)}%</span>
+                <span className="text-xs font-black">{(parseFloat(commissionRate)).toFixed(1)}%</span>
               </div>
             </div>
           )}

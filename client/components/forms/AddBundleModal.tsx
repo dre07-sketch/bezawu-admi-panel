@@ -34,7 +34,7 @@ const AddBundleModal: React.FC<AddBundleModalProps> = ({ onClose, isDarkMode }) 
     const fetchProducts = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:5000/api/products/products-get', {
+        const response = await fetch('https://branchapi.ristestate.com/api/products/products-get', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (response.ok) {
@@ -87,7 +87,7 @@ const AddBundleModal: React.FC<AddBundleModalProps> = ({ onClose, isDarkMode }) 
         const uploadData = new FormData();
         uploadData.append('image', imageFile);
 
-        const uploadResponse = await fetch('http://localhost:5000/api/upload/image', {
+        const uploadResponse = await fetch('https://branchapi.ristestate.com/api/upload/image', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -116,7 +116,7 @@ const AddBundleModal: React.FC<AddBundleModalProps> = ({ onClose, isDarkMode }) 
         }))
       };
 
-      const response = await fetch('http://localhost:5000/api/bundles/bundles-post', {
+      const response = await fetch('https://branchapi.ristestate.com/api/bundles/bundles-post', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -194,7 +194,7 @@ const AddBundleModal: React.FC<AddBundleModalProps> = ({ onClose, isDarkMode }) 
                 />
               </div>
 
-              <div className="grid grid-cols-3 gap-6">
+              <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-3">
                   <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2 px-1">
                     <DollarSign size={12} className="text-emerald-500" /> Target Price (ETB)
@@ -227,38 +227,48 @@ const AddBundleModal: React.FC<AddBundleModalProps> = ({ onClose, isDarkMode }) 
                     onChange={e => setFormData({ ...formData, discount: e.target.value })}
                   />
                 </div>
+              </div>
 
-                <div className="space-y-3">
-                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2 px-1">
-                    <ImageIcon size={12} className="text-emerald-500" /> Bundle Image
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      id="bundle-image"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          setImageFile(file);
-                          // Create preview URL
-                          const url = URL.createObjectURL(file);
-                          setFormData({ ...formData, image_url: url });
-                        }
-                      }}
-                    />
-                    <label
-                      htmlFor="bundle-image"
-                      className={`w-full px-8 py-5 rounded-2xl border transition-all cursor-pointer flex items-center gap-3 hover:border-emerald-500 ${isDarkMode ? 'bg-[#0f1115] border-slate-800 text-slate-500' : 'bg-slate-50 border-slate-200 text-slate-600'
-                        }`}
-                    >
-                      <ImageIcon size={18} className="text-emerald-500" />
-                      <span className="text-sm font-medium truncate">
-                        {imageFile ? imageFile.name : 'Choose...'}
+              <div className="space-y-3">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex items-center gap-2 px-1">
+                  <ImageIcon size={12} className="text-emerald-500" /> Bundle Image
+                </label>
+                <div className="relative">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    id="bundle-image"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setImageFile(file);
+                        const url = URL.createObjectURL(file);
+                        setFormData({ ...formData, image_url: url });
+                      }
+                    }}
+                  />
+                  <label
+                    htmlFor="bundle-image"
+                    className={`w-full px-8 py-5 rounded-2xl border transition-all cursor-pointer flex items-center gap-4 hover:border-emerald-500 group ${isDarkMode ? 'bg-[#0f1115] border-slate-800 text-slate-500' : 'bg-slate-50 border-slate-200 text-slate-600'
+                      }`}
+                  >
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border overflow-hidden ${isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}>
+                      {formData.image_url ? (
+                        <img src={formData.image_url} alt="Preview" className="w-full h-full object-cover" />
+                      ) : (
+                        <ImageIcon size={20} className="text-emerald-500" />
+                      )}
+                    </div>
+                    <div className="flex flex-col">
+                      <span className={`text-sm font-bold ${formData.image_url ? (isDarkMode ? 'text-white' : 'text-slate-900') : ''}`}>
+                        {imageFile ? imageFile.name : 'Upload visual asset...'}
                       </span>
-                    </label>
-                  </div>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+                        {formData.image_url ? 'Click to replace' : 'JPG, PNG supported'}
+                      </span>
+                    </div>
+                  </label>
                 </div>
               </div>
 

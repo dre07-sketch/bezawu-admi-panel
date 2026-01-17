@@ -19,7 +19,7 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ onBack, onSuccess }) =>
         setError('');
 
         try {
-            const response = await fetch('http://localhost:5000/api/forget/send-otp', {
+            const response = await fetch('https://branchapi.ristestate.com/api/forget/send-otp', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -99,7 +99,6 @@ const ForgotPassword: React.FC<ForgotPasswordProps> = ({ onBack, onSuccess }) =>
 
                 <div className="mt-14 flex justify-center">
                     <div className="flex items-center gap-4 px-8 py-4 rounded-full glass-surface shadow-md">
-                        <Sparkles size={16} className="text-emerald-500 animate-pulse" />
                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Bezaw Security Ledger 4.2.0</span>
                     </div>
                 </div>

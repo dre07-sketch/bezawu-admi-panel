@@ -61,7 +61,6 @@ export const IntelligenceFeed: React.FC<{ isDarkMode: boolean }> = ({ isDarkMode
             Branch <span className="text-emerald-600">Intelligence</span>
           </h1>
           <p className="text-slate-500 text-sm font-bold uppercase tracking-widest mt-2 flex items-center gap-2">
-            <Sparkles size={14} className="text-emerald-500" />
             Live Feedback & AI Sentiment Streams
           </p>
         </div>

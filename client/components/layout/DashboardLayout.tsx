@@ -41,12 +41,13 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout, isDar
   const [activeTab, setActiveTab] = useState('orders');
   const [isBusy, setIsBusy] = useState(user.isBusy);
   const [arrivedOrder, setArrivedOrder] = useState<Order | null>(null);
+  const [inventoryRefreshKey, setInventoryRefreshKey] = useState(0);
 
   const handleToggleBusy = async () => {
     const nextBusy = !isBusy;
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/settings/toggle-busy', {
+      const response = await fetch('https://branchapi.ristestate.com/api/settings/toggle-busy', {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -83,7 +84,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout, isDar
   const checkArrivals = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/orders/arrivals-get', {
+      const response = await fetch('https://branchapi.ristestate.com/api/orders/arrivals-get', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
@@ -112,7 +113,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout, isDar
   const handleUpdateStatus = async (orderId: string, nextStatus: OrderStatus) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/orders/${orderId}/status`, {
+      const response = await fetch(`https://branchapi.ristestate.com/api/orders/${orderId}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -147,10 +148,24 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout, isDar
         return <FeedbackFeed isDarkMode={isDarkMode} />;
       case 'inventory':
         return <Inventory
+          key={inventoryRefreshKey}
           isDarkMode={isDarkMode}
           onAddProduct={() => setIsAddProductOpen(true)}
           onSelectProduct={setSelectedProduct}
         />;
+
+        // ... (inside return JSX)
+
+        {
+          selectedProduct && (
+            <ProductDetailModal
+              product={selectedProduct}
+              onClose={() => setSelectedProduct(null)}
+              onRefresh={() => setInventoryRefreshKey(prev => prev + 1)}
+              isDarkMode={isDarkMode}
+            />
+          )
+        }
       case 'packages':
         return <SpecialPackages
           isDarkMode={isDarkMode}
@@ -284,6 +299,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ user, onLogout, isDar
         <ProductDetailModal
           product={selectedProduct}
           onClose={() => setSelectedProduct(null)}
+          onRefresh={() => setInventoryRefreshKey(prev => prev + 1)}
           isDarkMode={isDarkMode}
         />
       )}

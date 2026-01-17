@@ -19,7 +19,7 @@ const SpecialPackages: React.FC<SpecialPackagesProps> = ({ isDarkMode, onAddPack
         try {
             setLoading(true);
             const token = localStorage.getItem('token');
-            const response = await fetch('http://localhost:5000/api/bundles/bundles-get', {
+            const response = await fetch('https://branchapi.ristestate.com/api/bundles/bundles-get', {
                 headers: { 'Authorization': `Bearer ${token}` }
             });
             if (response.ok) {
@@ -41,7 +41,7 @@ const SpecialPackages: React.FC<SpecialPackagesProps> = ({ isDarkMode, onAddPack
         e.stopPropagation();
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:5000/api/bundles/bundles/${id}/toggle`, {
+            const response = await fetch(`https://branchapi.ristestate.com/api/bundles/bundles/${id}/toggle`, {
                 method: 'PATCH',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -58,7 +58,7 @@ const SpecialPackages: React.FC<SpecialPackagesProps> = ({ isDarkMode, onAddPack
         if (!window.confirm('Are you sure you want to decommission this strategic bundle?')) return;
         try {
             const token = localStorage.getItem('token');
-            const response = await fetch(`http://localhost:5000/api/bundles/bundles/${id}`, {
+            const response = await fetch(`https://branchapi.ristestate.com/api/bundles/bundles/${id}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
@@ -84,11 +84,11 @@ const SpecialPackages: React.FC<SpecialPackagesProps> = ({ isDarkMode, onAddPack
         // Handle legacy absolute URLs with potential wrong IPs (e.g. 192.168.x.x)
         if (url.includes('/uploads/')) {
             const filename = url.split('/uploads/')[1];
-            return `http://localhost:5000/uploads/${filename}`;
+            return `https://branchapi.ristestate.com/uploads/${filename}`;
         }
 
         if (url.startsWith('http')) return url;
-        return `http://localhost:5000${url}`;
+        return `https://branchapi.ristestate.com${url}`;
     };
 
     if (loading) {
@@ -112,7 +112,7 @@ const SpecialPackages: React.FC<SpecialPackagesProps> = ({ isDarkMode, onAddPack
                 <div className="flex items-center gap-4">
                     <div className="relative">
                         <div className="p-3 bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl shadow-lg shadow-emerald-500/30">
-                            <Sparkles className="text-white" size={24} />
+                            
                         </div>
                         <div className="absolute -inset-1 bg-emerald-500 rounded-xl blur-lg opacity-30 animate-pulse"></div>
                     </div>

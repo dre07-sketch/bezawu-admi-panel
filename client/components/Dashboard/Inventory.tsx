@@ -11,16 +11,17 @@ interface InventoryProps {
 const getImageUrl = (url: string | null) => {
   if (!url) return null;
   if (url.startsWith('http')) return url;
-  return `http://localhost:5000${url.startsWith('/') ? '' : '/'}${url}`;
+  return `https://branchapi.ristestate.com${url.startsWith('/') ? '' : '/'}${url}`;
 };
 
 export const Inventory: React.FC<InventoryProps> = ({ isDarkMode, onAddProduct, onSelectProduct }) => {
   const [items, setItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const fetchItems = () => {
     const token = localStorage.getItem('token');
-    fetch('http://localhost:5000/api/products/products-get', {
+    fetch('https://branchapi.ristestate.com/api/products/products-get', {
       headers: {
         'Authorization': `Bearer ${token}`
       }
@@ -41,6 +42,15 @@ export const Inventory: React.FC<InventoryProps> = ({ isDarkMode, onAddProduct, 
       });
   };
 
+  const filteredItems = items.filter(item => {
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      item.name?.toLowerCase().includes(searchLower) ||
+      item.id?.toString().toLowerCase().includes(searchLower) ||
+      item.category?.toLowerCase().includes(searchLower)
+    );
+  });
+
   useEffect(() => {
     fetchItems();
   }, []);
@@ -49,6 +59,7 @@ export const Inventory: React.FC<InventoryProps> = ({ isDarkMode, onAddProduct, 
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
+      {/* ... (Header) ... */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className={`text-2xl font-bold tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Branch Inventory</h1>
@@ -60,7 +71,7 @@ export const Inventory: React.FC<InventoryProps> = ({ isDarkMode, onAddProduct, 
             className={`border px-4 py-2.5 rounded-xl flex items-center gap-2 transition-all ${isDarkMode ? 'bg-[#121418] border-slate-800 text-slate-400 hover:text-white' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
               }`}
           >
-            <Sparkles size={18} className="text-emerald-500" />
+
             REFRESH
           </button>
           <button
@@ -81,6 +92,8 @@ export const Inventory: React.FC<InventoryProps> = ({ isDarkMode, onAddProduct, 
             type="text"
             placeholder="Search catalog..."
             className="bg-transparent border-none w-full focus:outline-none placeholder:text-slate-500"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
         <button className={`border px-4 py-2 rounded-xl flex items-center gap-2 transition-colors ${isDarkMode ? 'bg-[#121418] border-slate-800 text-slate-400 hover:text-white' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
@@ -105,7 +118,7 @@ export const Inventory: React.FC<InventoryProps> = ({ isDarkMode, onAddProduct, 
               </tr>
             </thead>
             <tbody className={`divide-y transition-colors ${isDarkMode ? 'divide-slate-800' : 'divide-slate-200'}`}>
-              {items.map((item) => (
+              {filteredItems.map((item) => (
                 <tr key={item.id} className={`transition-colors group ${isDarkMode ? 'hover:bg-slate-800/30' : 'hover:bg-slate-50'}`}>
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
@@ -157,7 +170,7 @@ export const Inventory: React.FC<InventoryProps> = ({ isDarkMode, onAddProduct, 
                       onClick={() => {
                         if (confirm('Are you sure you want to delete this product?')) {
                           const token = localStorage.getItem('token');
-                          fetch(`http://localhost:5000/api/products/${item.id}`, {
+                          fetch(`https://branchapi.ristestate.com/api/products/${item.id}`, {
                             method: 'DELETE',
                             headers: { 'Authorization': `Bearer ${token}` }
                           })
@@ -182,26 +195,30 @@ export const Inventory: React.FC<InventoryProps> = ({ isDarkMode, onAddProduct, 
   );
 };
 
-export const AdjustStockModal: React.FC<{ product: any, onClose: () => void, isDarkMode: boolean }> = ({ product, onClose, isDarkMode }) => {
+export const AdjustStockModal: React.FC<{ product: any, onClose: () => void, onSuccess: () => void, isDarkMode: boolean }> = ({ product, onClose, onSuccess, isDarkMode }) => {
   const [newStock, setNewStock] = useState(product.stock.toString());
+  const [newPrice, setNewPrice] = useState(product.price.toString());
 
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`http://localhost:5000/api/products/${product.id}`, {
+      const res = await fetch(`https://branchapi.ristestate.com/api/products/${product.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ stock: parseFloat(newStock) })
+        body: JSON.stringify({
+          stock: parseFloat(newStock),
+          price: parseFloat(newPrice)
+        })
       });
       if (res.ok) {
-        onClose();
-        window.location.reload(); // Simple reload to refresh data
+        onSuccess(); // Refresh list without reload
+        onClose();   // Close modal
       } else {
-        console.error('Failed to update stock');
+        console.error('Failed to update product');
       }
     } catch (err) {
       console.error(err);
@@ -217,7 +234,7 @@ export const AdjustStockModal: React.FC<{ product: any, onClose: () => void, isD
             <div className="bg-blue-500/10 p-3 rounded-xl text-blue-500">
               <Edit3 size={24} />
             </div>
-            <h3 className={`text-xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Adjust Units</h3>
+            <h3 className={`text-xl font-black tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Adjust Product</h3>
           </div>
           <button onClick={onClose} className="text-slate-500 hover:text-slate-700">
             <X size={24} />
@@ -228,11 +245,20 @@ export const AdjustStockModal: React.FC<{ product: any, onClose: () => void, isD
             <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">New Unit Count</label>
             <input
               type="number"
-              autoFocus
               className={`w-full px-6 py-4 rounded-2xl border transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${isDarkMode ? 'bg-[#0f1115] border-slate-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
                 }`}
               value={newStock}
               onChange={(e) => setNewStock(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">New Price (ETB)</label>
+            <input
+              type="number"
+              className={`w-full px-6 py-4 rounded-2xl border transition-all focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${isDarkMode ? 'bg-[#0f1115] border-slate-800 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
+                }`}
+              value={newPrice}
+              onChange={(e) => setNewPrice(e.target.value)}
             />
           </div>
           <div className="flex gap-4">
@@ -248,7 +274,7 @@ export const AdjustStockModal: React.FC<{ product: any, onClose: () => void, isD
               type="submit"
               className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-black py-4 rounded-xl text-xs uppercase tracking-widest shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2"
             >
-              <Save size={16} /> Update Units
+              <Save size={16} /> Save Changes
             </button>
           </div>
         </form>
@@ -257,7 +283,7 @@ export const AdjustStockModal: React.FC<{ product: any, onClose: () => void, isD
   );
 };
 
-export const ProductDetailModal: React.FC<{ product: any, onClose: () => void, isDarkMode: boolean }> = ({ product, onClose, isDarkMode }) => {
+export const ProductDetailModal: React.FC<{ product: any, onClose: () => void, onRefresh: () => void, isDarkMode: boolean }> = ({ product, onClose, onRefresh, isDarkMode }) => {
   const [showAdjust, setShowAdjust] = useState(false);
   const stockPercentage = Math.min((product.stock / 150) * 100, 100);
 
@@ -384,6 +410,7 @@ export const ProductDetailModal: React.FC<{ product: any, onClose: () => void, i
           <AdjustStockModal
             product={product}
             onClose={() => setShowAdjust(false)}
+            onSuccess={onRefresh}
             isDarkMode={isDarkMode}
           />
         )}

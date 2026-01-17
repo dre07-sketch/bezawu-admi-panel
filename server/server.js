@@ -38,13 +38,14 @@ app.use(helmet({
 
 const corsOptions = {
     origin: process.env.NODE_ENV === 'production'
-        ? [process.env.FRONTEND_URL, 'http://localhost:5173'] // Add your production domains here
+        ? [process.env.FRONTEND_URL, 'http://localhost:5173', 'https://branch.ristestate.com'] // Add your production domains here
         : '*', // Allow all in development
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
     optionsSuccessStatus: 200
 };
+
 app.use(cors(corsOptions));
 app.use(morgan('dev'));
 app.use(bodyParser.json());

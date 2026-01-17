@@ -70,7 +70,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ isDarkMode }) => {
     try {
       const token = localStorage.getItem('token');
       // 1. Fetch main stats (FAST)
-      const response = await fetch('http://localhost:5000/api/analytics/dashboard-stats', {
+      const response = await fetch('https://branchapi.ristestate.com/api/analytics/dashboard-stats', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
@@ -81,7 +81,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ isDarkMode }) => {
 
         // 2. Fetch AI predictions (SLOW)
         try {
-          const aiResponse = await fetch('http://localhost:5000/api/analytics/prediction', {
+          const aiResponse = await fetch('https://branchapi.ristestate.com/api/analytics/prediction', {
             headers: { 'Authorization': `Bearer ${token}` }
           });
           if (aiResponse.ok) {
@@ -333,7 +333,7 @@ const Analytics: React.FC<AnalyticsProps> = ({ isDarkMode }) => {
                 <div className={`p-6 rounded-3xl border ${isDarkMode ? 'bg-slate-900/50 border-slate-800' : 'bg-slate-50 border-slate-100'}`}>
                   <div className="flex justify-between items-start mb-4">
                     <div className="p-2 rounded-xl bg-fuchsia-500/10 text-fuchsia-500">
-                      <Sparkles size={20} />
+                      
                     </div>
                   </div>
                   <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">Top Product Forecast</p>

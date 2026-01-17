@@ -53,7 +53,7 @@ export const LiveOrders: React.FC<LiveOrdersProps> = ({ isDarkMode, onUpdateStat
   const fetchOrders = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/orders/orders-get', {
+      const response = await fetch('https://branchapi.ristestate.com/api/orders/orders-get', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -95,7 +95,7 @@ export const LiveOrders: React.FC<LiveOrdersProps> = ({ isDarkMode, onUpdateStat
   const handleUpdateStatus = async (id: string, status: OrderStatus) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5000/api/orders/${id}/status`, {
+      const response = await fetch(`https://branchapi.ristestate.com/api/orders/${id}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -199,7 +199,6 @@ export const LiveOrders: React.FC<LiveOrdersProps> = ({ isDarkMode, onUpdateStat
               className={`border px-4 py-2.5 rounded-xl flex items-center gap-2 transition-all ${isDarkMode ? 'bg-[#121418] border-slate-800 text-slate-400 hover:text-white' : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
                 }`}
             >
-              <Sparkles size={18} className="text-emerald-500" />
             </button>
 
 
@@ -338,7 +337,7 @@ export const LiveOrders: React.FC<LiveOrdersProps> = ({ isDarkMode, onUpdateStat
                         <div className={`p-2 rounded-lg ${isDarkMode ? 'bg-slate-800' : 'bg-slate-100'}`}>
                           <Package size={16} className={isDarkMode ? 'text-slate-400' : 'text-slate-500'} />
                         </div>
-                        <span className={`text-sm font-bold tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>#{order.id}</span>
+                        <span className={`text-sm font-bold tracking-tight ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{order.id}</span>
                       </div>
                     </td>
                     <td className="px-6 py-5">
@@ -385,7 +384,7 @@ export const LiveOrders: React.FC<LiveOrdersProps> = ({ isDarkMode, onUpdateStat
                       <span className={`text-sm font-bold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{order.totalPrice.toLocaleString()} ETB</span>
                     </td>
                     <td className="px-6 py-5 text-right">
-                      <div className="flex items-center justify-end gap-2 text-white">
+                      <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={() => setSelectedChatOrder(order)}
                           className={`p-2 rounded-lg transition-all ${isDarkMode ? 'bg-slate-800 text-indigo-400 hover:bg-slate-700' : 'bg-slate-100 text-indigo-500 hover:bg-slate-200'}`}
@@ -397,29 +396,44 @@ export const LiveOrders: React.FC<LiveOrdersProps> = ({ isDarkMode, onUpdateStat
                           <ExternalLink size={16} />
                         </button>
                         <div className={`h-8 w-px mx-1 ${isDarkMode ? 'bg-slate-800' : 'bg-slate-200'}`}></div>
-                        {order.status !== OrderStatus.COMPLETED && (
+                        {order.status && (order.status as string).toUpperCase() !== 'COMPLETED' && (order.status as string).toUpperCase() !== 'CANCELLED' && (
                           <div className="flex gap-2">
-                            <button
-                              onClick={() => handleUpdateStatus(order.id, OrderStatus.PREPARING)}
-                              className={`text-[10px] font-bold px-3 py-1.5 rounded-lg transition-all shadow-md uppercase ${order.status === OrderStatus.PREPARING ? 'bg-emerald-600 ring-2 ring-emerald-500/20' : 'bg-emerald-500 hover:bg-emerald-600'}`}
-                            >
-                              Pick
-                            </button>
-                            <button
-                              onClick={() => handleUpdateStatus(order.id, OrderStatus.READY)}
-                              className={`text-[10px] font-bold px-3 py-1.5 rounded-lg transition-all shadow-md uppercase ${order.status === OrderStatus.READY ? 'bg-blue-600 ring-2 ring-blue-500/20' : 'bg-blue-500 hover:bg-blue-600'}`}
-                            >
-                              Ready
-                            </button>
-                            <button
-                              onClick={() => handleUpdateStatus(order.id, OrderStatus.COMPLETED)}
-                              className="bg-slate-900 hover:bg-black text-white text-[10px] font-bold px-3 py-1.5 rounded-lg transition-all shadow-md uppercase"
-                            >
-                              Complete
-                            </button>
+                            {(() => {
+                              const s = (order.status as string).toUpperCase();
+                              if (s === 'PENDING' || s === 'ACCEPTED') {
+                                return (
+                                  <button
+                                    onClick={() => handleUpdateStatus(order.id, OrderStatus.PREPARING)}
+                                    className="bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-bold px-4 py-2 rounded-lg transition-all shadow-lg uppercase min-w-[100px] active:scale-95 flex items-center justify-center"
+                                  >
+                                    Prepare
+                                  </button>
+                                );
+                              }
+                              if (s === 'PREPARING') {
+                                return (
+                                  <button
+                                    onClick={() => handleUpdateStatus(order.id, OrderStatus.READY)}
+                                    className="bg-blue-500 hover:bg-blue-600 text-white text-[10px] font-bold px-4 py-2 rounded-lg transition-all shadow-lg uppercase min-w-[100px] active:scale-95 flex items-center justify-center"
+                                  >
+                                    Ready
+                                  </button>
+                                );
+                              }
+                              // For READY, ARRIVED, VERIFIED, GIVEN or anything else that is active
+                              return (
+                                <button
+                                  onClick={() => handleUpdateStatus(order.id, OrderStatus.COMPLETED)}
+                                  className="bg-slate-900 hover:bg-black text-white text-[10px] font-bold px-4 py-2 rounded-lg transition-all shadow-lg uppercase min-w-[100px] active:scale-95 flex items-center justify-center"
+                                >
+                                  Complete
+                                </button>
+                              );
+                            })()}
                           </div>
                         )}
                       </div>
+
                     </td>
                   </tr>
                 ))

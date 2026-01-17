@@ -39,7 +39,7 @@ const AddAdModal: React.FC<AddAdModalProps> = ({ isOpen, onClose, isDarkMode }) 
 
             const token = localStorage.getItem('token');
 
-            const uploadRes = await fetch('http://localhost:5000/api/upload/image', {
+            const uploadRes = await fetch('https://branchapi.ristestate.com/api/upload/image', {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` },
                 body: formData
@@ -50,7 +50,7 @@ const AddAdModal: React.FC<AddAdModalProps> = ({ isOpen, onClose, isDarkMode }) 
             const mediaUrl = uploadData.imageUrl; // The endpoint returns { imageUrl: ... } even for relative paths
 
             // 2. Create Ad
-            const adRes = await fetch('http://localhost:5000/api/ads/ads-post', {
+            const adRes = await fetch('https://branchapi.ristestate.com/api/ads/ads-post', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

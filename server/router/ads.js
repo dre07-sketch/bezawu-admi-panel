@@ -8,16 +8,34 @@ const authMiddleware = require('../middleware/auth');
 // Get all ads
 router.get('/ads-get', authMiddleware, async (req, res) => {
     try {
-        const text = `
+        const { branchId, supermarketId, role } = req.user;
+
+        let text = `
             SELECT *, 
             CASE 
                 WHEN expires_at < NOW() THEN 'EXPIRED'
                 ELSE 'ACTIVE' 
             END as status_derived
             FROM ads 
-            ORDER BY created_at DESC
+            WHERE 1=1
         `;
-        const result = await query(text);
+
+        const params = [];
+        if (role === 'SUPER_ADMIN' || role === 'ADMIN') {
+            // No filters
+        } else if (branchId) {
+            text += ` AND branch_id = $${params.length + 1}`;
+            params.push(branchId);
+        } else if (supermarketId) {
+            text += ` AND supermarket_id = $${params.length + 1}`;
+            params.push(supermarketId);
+        } else {
+            return res.json([]);
+        }
+
+        text += ` ORDER BY created_at DESC`;
+
+        const result = await query(text, params);
         res.json(result.rows);
     } catch (err) {
         console.error('[API] Error fetching ads:', err);
@@ -38,6 +56,7 @@ router.post('/ads-post', [
     }
     try {
         const { type, media_url, description, duration_hours } = req.body;
+        const { branchId, supermarketId } = req.user;
 
         if (!type || !media_url || !duration_hours) {
             return res.status(400).json({ message: 'Missing required fields' });
@@ -48,17 +67,17 @@ router.post('/ads-post', [
         expiresAt.setHours(expiresAt.getHours() + parseInt(duration_hours));
 
         const text = `
-            INSERT INTO ads (type, media_url, description, duration_hours, expires_at)
-            VALUES ($1, $2, $3, $4, $5)
+            INSERT INTO ads (type, media_url, description, duration_hours, expires_at, branch_id, supermarket_id)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
             RETURNING *
         `;
 
-        const result = await query(text, [type, media_url, description, duration_hours, expiresAt]);
+        const result = await query(text, [type, media_url, description, duration_hours, expiresAt, branchId, supermarketId]);
         res.status(201).json({ message: 'Ad created successfully', ad: result.rows[0] });
 
     } catch (err) {
         console.error('[API] Error creating ad:', err);
-        res.status(500).json({ message: 'Internal Server Error' });
+        res.status(500).json({ message: 'Internal Server Error', error: err.message });
     }
 });
 
@@ -66,6 +85,28 @@ router.post('/ads-post', [
 router.delete('/:id', authMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
+        const { branchId, supermarketId, role } = req.user;
+
+        let authQuery = 'SELECT id FROM ads WHERE id = $1';
+        const authParams = [id];
+
+        if (role === 'SUPER_ADMIN' || role === 'ADMIN') {
+            // No filters
+        } else if (branchId) {
+            authQuery += ' AND branch_id = $2';
+            authParams.push(branchId);
+        } else if (supermarketId) {
+            authQuery += ' AND supermarket_id = $2';
+            authParams.push(supermarketId);
+        } else {
+            return res.status(403).json({ message: 'Unauthorized' });
+        }
+
+        const authResult = await query(authQuery, authParams);
+        if (authResult.rows.length === 0) {
+            return res.status(403).json({ message: 'Unauthorized: Ad not in your scope' });
+        }
+
         await query('DELETE FROM ads WHERE id = $1', [id]);
         res.json({ message: 'Ad deleted successfully' });
     } catch (err) {
@@ -85,6 +126,28 @@ router.patch('/:id/toggle', [
     }
     try {
         const { id } = req.params;
+        const { branchId, supermarketId, role } = req.user;
+
+        let authQuery = 'SELECT id FROM ads WHERE id = $1';
+        const authParams = [id];
+
+        if (role === 'SUPER_ADMIN' || role === 'ADMIN') {
+            // No filters
+        } else if (branchId) {
+            authQuery += ' AND branch_id = $2';
+            authParams.push(branchId);
+        } else if (supermarketId) {
+            authQuery += ' AND supermarket_id = $2';
+            authParams.push(supermarketId);
+        } else {
+            return res.status(403).json({ message: 'Unauthorized' });
+        }
+
+        const authResult = await query(authQuery, authParams);
+        if (authResult.rows.length === 0) {
+            return res.status(403).json({ message: 'Unauthorized: Ad not in your scope' });
+        }
+
         const result = await query(
             'UPDATE ads SET is_active = NOT is_active WHERE id = $1 RETURNING is_active',
             [id]

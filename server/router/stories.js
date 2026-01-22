@@ -8,18 +8,34 @@ const authMiddleware = require('../middleware/auth');
 // Get all stories
 router.get('/stories-get', authMiddleware, async (req, res) => {
     try {
+        const { branchId, supermarketId, role } = req.user;
 
-
-        const text = `
+        let text = `
             SELECT 
                 s.*,
                 (SELECT COUNT(*) FROM story_comments_and_likes WHERE story_id = s.id AND type = 'comment')::int as comments_count,
                 (SELECT COUNT(*) FROM story_comments_and_likes WHERE story_id = s.id AND type = 'like')::int as likes_count
             FROM stories s
-            ORDER BY s.created_at DESC
+            WHERE 1=1
         `;
 
-        const result = await query(text);
+        const params = [];
+        if (role === 'SUPER_ADMIN' || role === 'ADMIN') {
+            // No filters for admins/superadmins
+        } else if (branchId) {
+            text += ` AND s.branch_id = $${params.length + 1}`;
+            params.push(branchId);
+        } else if (supermarketId) {
+            text += ` AND s.supermarket_id = $${params.length + 1}`;
+            params.push(supermarketId);
+        } else {
+            // If no context, return empty (standard security practice in this app)
+            return res.json([]);
+        }
+
+        text += ` ORDER BY s.created_at DESC`;
+
+        const result = await query(text, params);
 
         res.json(result.rows);
     } catch (err) {
@@ -32,7 +48,9 @@ router.get('/stories-get', authMiddleware, async (req, res) => {
 router.get('/:id', authMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
-        const text = `
+        const { branchId, supermarketId, role } = req.user;
+
+        let text = `
             SELECT 
                 s.*,
                 (SELECT COUNT(*) FROM story_comments_and_likes WHERE story_id = s.id AND type = 'comment')::int as comments_count,
@@ -40,9 +58,24 @@ router.get('/:id', authMiddleware, async (req, res) => {
             FROM stories s
             WHERE s.id = $1
         `;
-        const result = await query(text, [id]);
+
+        const params = [id];
+
+        if (role === 'SUPER_ADMIN' || role === 'ADMIN') {
+            // No filters
+        } else if (branchId) {
+            text += ` AND s.branch_id = $2`;
+            params.push(branchId);
+        } else if (supermarketId) {
+            text += ` AND s.supermarket_id = $2`;
+            params.push(supermarketId);
+        } else {
+            return res.status(403).json({ message: 'Unauthorized' });
+        }
+
+        const result = await query(text, params);
         if (result.rows.length === 0) {
-            return res.status(404).json({ message: 'Story not found' });
+            return res.status(404).json({ message: 'Story not found or unauthorized' });
         }
         res.json(result.rows[0]);
     } catch (err) {
@@ -98,14 +131,32 @@ router.patch('/:id/toggle', [
     }
     try {
         const { id } = req.params;
+        const { branchId, supermarketId, role } = req.user;
+
+        let authQuery = 'SELECT id FROM stories WHERE id = $1';
+        const authParams = [id];
+
+        if (role === 'SUPER_ADMIN' || role === 'ADMIN') {
+            // No filters
+        } else if (branchId) {
+            authQuery += ' AND branch_id = $2';
+            authParams.push(branchId);
+        } else if (supermarketId) {
+            authQuery += ' AND supermarket_id = $2';
+            authParams.push(supermarketId);
+        } else {
+            return res.status(403).json({ message: 'Unauthorized' });
+        }
+
+        const authResult = await query(authQuery, authParams);
+        if (authResult.rows.length === 0) {
+            return res.status(403).json({ message: 'Unauthorized: Story not in your scope' });
+        }
+
         const result = await query(
             'UPDATE stories SET is_active = NOT is_active WHERE id = $1 RETURNING is_active',
             [id]
         );
-
-        if (result.rows.length === 0) {
-            return res.status(404).json({ message: 'Story not found' });
-        }
 
         res.json({
             message: 'Story status updated',
@@ -121,11 +172,29 @@ router.patch('/:id/toggle', [
 router.delete('/:id', authMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
-        const result = await query('DELETE FROM stories WHERE id = $1 RETURNING id', [id]);
+        const { branchId, supermarketId, role } = req.user;
 
-        if (result.rows.length === 0) {
-            return res.status(404).json({ message: 'Story not found' });
+        let authQuery = 'SELECT id FROM stories WHERE id = $1';
+        const authParams = [id];
+
+        if (role === 'SUPER_ADMIN' || role === 'ADMIN') {
+            // No filters
+        } else if (branchId) {
+            authQuery += ' AND branch_id = $2';
+            authParams.push(branchId);
+        } else if (supermarketId) {
+            authQuery += ' AND supermarket_id = $2';
+            authParams.push(supermarketId);
+        } else {
+            return res.status(403).json({ message: 'Unauthorized' });
         }
+
+        const authResult = await query(authQuery, authParams);
+        if (authResult.rows.length === 0) {
+            return res.status(403).json({ message: 'Unauthorized: Story not in your scope' });
+        }
+
+        const result = await query('DELETE FROM stories WHERE id = $1 RETURNING id', [id]);
 
         res.json({ message: 'Story deleted successfully' });
     } catch (err) {

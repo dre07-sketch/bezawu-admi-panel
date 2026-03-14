@@ -41,7 +41,7 @@ const allowedOrigins = [
     'http://localhost:5173',
     'https://branchportal.bezawcurbside.com',
     'https://branchapi.bezawcurbside.com',
-    'https://branch.ristestate.com'
+   
 ];
 
 // 2. Comprehensive CORS Middleware

@@ -18,7 +18,8 @@ import {
   ImageIcon,
   UserCheck,
   FileText,
-  Landmark
+  Landmark,
+  X
 } from 'lucide-react';
 
 import { OrderStatus } from './types';
@@ -57,6 +58,7 @@ export const STATUS_MAP: Record<OrderStatus, { label: string; color: string; ico
   [OrderStatus.ARRIVED]: { label: 'Customer Arrived', color: 'text-orange-400', icon: <AlertCircle size={16} /> },
   [OrderStatus.COMPLETED]: { label: 'Completed', color: 'text-emerald-500', icon: <CheckCircle2 size={16} /> },
   [OrderStatus.CANCELLED]: { label: 'Cancelled', color: 'text-rose-400', icon: <AlertCircle size={16} /> },
+  [OrderStatus.REJECTED]: { label: 'Rejected', color: 'text-red-500', icon: <X size={16} /> },
   [OrderStatus.VERIFIED]: { label: 'Verified', color: 'text-teal-400', icon: <CheckCircle2 size={16} /> },
   [OrderStatus.GIVEN]: { label: 'Given', color: 'text-sky-400', icon: <Package size={16} /> },
 };

@@ -115,6 +115,7 @@ export const LiveOrders: React.FC<LiveOrdersProps> = ({ isDarkMode, onUpdateStat
     { label: 'Preparing', status: OrderStatus.PREPARING },
     { label: 'Ready for Pickup', status: OrderStatus.READY },
     { label: 'Arrived', status: OrderStatus.ARRIVED },
+    { label: 'Rejected', status: OrderStatus.REJECTED },
   ];
 
   const filteredOrders = orders.filter(order => {
@@ -389,18 +390,26 @@ export const LiveOrders: React.FC<LiveOrdersProps> = ({ isDarkMode, onUpdateStat
                           <ExternalLink size={14} />
                         </button>
                         <div className={`h-8 w-px mx-1 ${isDarkMode ? 'bg-slate-800' : 'bg-slate-200'}`}></div>
-                        {order.status && (order.status as string).toUpperCase() !== 'COMPLETED' && (order.status as string).toUpperCase() !== 'CANCELLED' && (
+                        {order.status && (order.status as string).toUpperCase() !== 'COMPLETED' && (order.status as string).toUpperCase() !== 'CANCELLED' && (order.status as string).toUpperCase() !== 'REJECTED' && (
                           <div className="flex gap-2">
                             {(() => {
                               const s = (order.status as string).toUpperCase();
                               if (s === 'PENDING' || s === 'ACCEPTED') {
                                 return (
-                                  <button
-                                    onClick={() => handleUpdateStatus(order.id, OrderStatus.PREPARING)}
-                                    className="bg-emerald-500 hover:bg-emerald-600 text-white text-[8px] font-bold px-2 py-1 rounded-lg transition-all shadow-md uppercase min-w-[70px] active:scale-95 flex items-center justify-center"
-                                  >
-                                    Prepare
-                                  </button>
+                                    <div className="flex gap-1.5">
+                                      <button
+                                        onClick={() => handleUpdateStatus(order.id, OrderStatus.PREPARING)}
+                                        className="bg-emerald-500 hover:bg-emerald-600 text-white text-[8px] font-bold px-2 py-1 rounded-lg transition-all shadow-md uppercase min-w-[70px] active:scale-95 flex items-center justify-center"
+                                      >
+                                        Prepare
+                                      </button>
+                                      <button
+                                        onClick={() => handleUpdateStatus(order.id, OrderStatus.REJECTED)}
+                                        className="bg-red-500 hover:bg-red-600 text-white text-[8px] font-bold px-2 py-1 rounded-lg transition-all shadow-md uppercase min-w-[70px] active:scale-95 flex items-center justify-center"
+                                      >
+                                        Reject
+                                      </button>
+                                    </div>
                                 );
                               }
                               if (s === 'PREPARING') {

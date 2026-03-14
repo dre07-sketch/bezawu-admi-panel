@@ -133,7 +133,7 @@ router.patch('/:id/status', [
     authMiddleware,
     param('id', 'Invalid Order ID').notEmpty().isString(),
     check('status', 'Status is required').not().isEmpty(),
-    check('status', 'Invalid status value').isIn(['PENDING', 'ACCEPTED', 'PREPARING', 'READY', 'READY_FOR_PICKUP', 'ARRIVED', 'COMPLETED', 'CANCELLED', 'VERIFIED', 'GIVEN'])
+    check('status', 'Invalid status value').isIn(['PENDING', 'ACCEPTED', 'PREPARING', 'READY', 'READY_FOR_PICKUP', 'ARRIVED', 'COMPLETED', 'CANCELLED', 'REJECTED', 'VERIFIED', 'GIVEN'])
 ], async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -146,7 +146,7 @@ router.patch('/:id/status', [
     try {
         // Fetch order AND customer email in one go
         let authCheckText = `
-            SELECT o.id, u.email 
+            SELECT o.id, u.email, o.customer_id 
             FROM orders o 
             LEFT JOIN branches b ON o.branch_id = b.id 
             LEFT JOIN customers u ON o.customer_id::text = u.id::text
@@ -204,6 +204,9 @@ router.patch('/:id/status', [
                 emailMessage = upperStatus === 'READY'
                     ? `Your order ${id} is now ready! Our team is waiting for you at the pickup point.`
                     : `Your order ${id} has been handed over. Thank you for choosing Bezaw Curbside!`;
+            } else if (upperStatus === 'REJECTED') {
+                emailTitle = 'Order Rejected';
+                emailMessage = `Your order ${id} is rejected because of transaction. Please try again with a valid payment proof receipt.`;
             }
 
             if (emailTitle) {
@@ -211,6 +214,35 @@ router.patch('/:id/status', [
                 sendStatusEmail(customerEmail, `Bezaw Curbside: ${emailTitle}`, emailTitle, emailMessage, id)
                     .then(sent => console.log(`[Email] Notification sent for ${id}: ${sent}`))
                     .catch(e => console.error(`[Email Error] ${e.message}`));
+            }
+        }
+
+        // ─── TRIGGER IN-APP NOTIFICATION ───
+        const customerId = authCheckResult.rows[0].customer_id;
+        if (customerId) {
+            let notifyTitle = '';
+            let notifyMessage = '';
+
+            const upperStatus = status.toUpperCase();
+            if (upperStatus === 'PREPARING') {
+                notifyTitle = 'Order Preparing';
+                notifyMessage = `Good news! Your order ${id} is now being prepared.`;
+            } else if (upperStatus === 'READY') {
+                notifyTitle = 'Order Ready!';
+                notifyMessage = `Your order ${id} is now ready for pickup. See you soon!`;
+            } else if (upperStatus === 'REJECTED') {
+                notifyTitle = 'Order Rejected';
+                notifyMessage = `Your order ${id} is rejected because of transaction. Please check your email for details.`;
+            } else if (['COMPLETED', 'VERIFIED', 'GIVEN'].includes(upperStatus)) {
+                notifyTitle = 'Order Completed';
+                notifyMessage = `Your order ${id} has been handed over. Thank you!`;
+            }
+
+            if (notifyTitle) {
+                query(
+                    'INSERT INTO notifications (customer_id, order_id, title, message) VALUES ($1, $2, $3, $4)',
+                    [customerId, id, notifyTitle, notifyMessage]
+                ).catch(e => console.error(`[Notification Error] ${e.message}`));
             }
         }
 

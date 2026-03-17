@@ -9,7 +9,8 @@ const authMiddleware = (req, res, next) => {
     }
 
     try {
-        const secret = process.env.JWT_SECRET || 'your_jwt_secret';
+        const secret = process.env.JWT_SECRET;
+        if (!secret) throw new Error('JWT_SECRET is not defined in environment');
         const decoded = jwt.verify(token, secret);
         req.user = decoded; // Contains id, email, role, branchId, vendorId
         next();

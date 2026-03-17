@@ -56,6 +56,7 @@ export interface Order {
   handoverTimeSeconds?: number | null;
   isGift: boolean;
   paymentProofUrl?: string | null;
+  unreadCount?: number;
 }
 
 export enum AuthStep {

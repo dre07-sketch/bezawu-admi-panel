@@ -30,6 +30,7 @@ router.get('/orders-get', authMiddleware, async (req, res) => {
                 o.arrived_at as "arrivedAt",
                 o.is_gift,
                 o.payment_proof_url as payment_proof_url,
+                (SELECT COUNT(*)::int FROM order_chats WHERE order_id = o.id AND sender_type = 'CUSTOMER' AND is_read = false) as "unreadCount",
                 EXTRACT(EPOCH FROM o.handover_time) as "handoverTimeSeconds",
                 COALESCE(
                     json_agg(
@@ -114,8 +115,9 @@ router.get('/orders-get', authMiddleware, async (req, res) => {
                 items: Array.isArray(row.items) ? row.items : [],
                 arrivedAt: row.arrivedAt,
                 isGift: row.is_gift || false,
-                paymentProofUrl: row.payment_proof_url ? (row.payment_proof_url.startsWith('http') ? row.payment_proof_url : `https://webappapi.bezawcurbside.com${row.payment_proof_url.startsWith('/') ? '' : '/'}${row.payment_proof_url}`) : null,
-                handoverTimeSeconds: row.handoverTimeSeconds ? parseFloat(row.handoverTimeSeconds) : null
+                paymentProofUrl: row.payment_proof_url ? (row.payment_proof_url.startsWith('http') ? row.payment_proof_url : `https://bzwappapi.bezawcurbside.com/${row.payment_proof_url.includes('uploads/proof') ? (row.payment_proof_url.startsWith('/') ? row.payment_proof_url.substring(1) : row.payment_proof_url) : `uploads/proof/${row.payment_proof_url.startsWith('/') ? row.payment_proof_url.substring(1) : row.payment_proof_url}`}`) : null,
+                unreadCount: row.unreadCount || 0,
+                handoverTimeSeconds: row.handoverTimeSeconds ? parseFloat(row.handoverTimeSeconds) : null,
             };
         });
 
@@ -340,6 +342,7 @@ router.get('/arrivals-get', authMiddleware, async (req, res) => {
                 o.arrived_at as "arrivedAt",
                 o.is_gift,
                 o.payment_proof_url as payment_proof_url,
+                (SELECT COUNT(*)::int FROM order_chats WHERE order_id = o.id AND sender_type = 'CUSTOMER' AND is_read = false) as "unreadCount",
                 EXTRACT(EPOCH FROM o.handover_time) as "handoverTimeSeconds",
                 COALESCE(
                     json_agg(
@@ -398,7 +401,7 @@ router.get('/arrivals-get', authMiddleware, async (req, res) => {
             params.push(vendorId);
         }
 
-        text += ` GROUP BY o.id, u.name, o.status, o.total_price, o.car_model, o.car_color, o.car_plate, o.vehicle_type, o.vehicle_plate, o.vehicle_color, o.arrived_at, o.handover_time, o.payment_proof_url, o.is_gift`;
+        text += ` GROUP BY o.id, u.name, o.status, o.total_price, o.car_model, o.car_color, o.car_plate, o.vehicle_type, o.vehicle_plate, o.vehicle_color, o.arrived_at, o.handover_time, o.payment_proof_url, o.is_gift ORDER BY o.created_at DESC`;
 
         const result = await query(text, params);
 
@@ -417,7 +420,8 @@ router.get('/arrivals-get', authMiddleware, async (req, res) => {
                 items: row.items,
                 arrivedAt: row.arrivedAt,
                 isGift: row.is_gift || false,
-                paymentProofUrl: row.payment_proof_url ? (row.payment_proof_url.startsWith('http') ? row.payment_proof_url : `https://webappapi.bezawcurbside.com${row.payment_proof_url.startsWith('/') ? '' : '/'}${row.payment_proof_url}`) : null,
+                paymentProofUrl: row.payment_proof_url ? (row.payment_proof_url.startsWith('http') ? row.payment_proof_url : `https://bzwappapi.bezawcurbside.com/${row.payment_proof_url.includes('uploads/proof') ? (row.payment_proof_url.startsWith('/') ? row.payment_proof_url.substring(1) : row.payment_proof_url) : `uploads/proof/${row.payment_proof_url.startsWith('/') ? row.payment_proof_url.substring(1) : row.payment_proof_url}`}`) : null,
+                unreadCount: row.unreadCount || 0,
                 handoverTimeSeconds: row.handoverTimeSeconds ? parseFloat(row.handoverTimeSeconds) : null
             };
         });

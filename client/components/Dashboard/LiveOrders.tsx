@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Order, OrderStatus } from '../../types';
 import { STATUS_MAP } from '../../constants';
 import { ExternalLink, User as UserIcon, Package, X, Phone, CreditCard, Clock, Loader2, Sparkles, Search, CheckCircle, Zap, IceCream, Activity, Gift } from 'lucide-react';
-import { playNotificationSound } from '../../services/soundService';
+import { playNotificationSound, playMessageSound } from '../../services/soundService';
 import FulfillmentView from '../FulfillmentView';
 import { QrCode, MessageSquare } from 'lucide-react';
 import ChatModal from './ChatModal';
@@ -18,6 +18,23 @@ const formatDuration = (seconds: number) => {
   const mins = Math.floor(seconds / 60);
   const secs = Math.floor(seconds % 60);
   return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
+
+const getProofUrl = (url: string | null | undefined) => {
+  // Domain for consumer app uploads
+  const PROOF_DOMAIN = 'https://bzwappapi.bezawcurbside.com';
+
+  if (!url) return '';
+  if (url.startsWith('http')) return url;
+  
+  let cleanPath = url.startsWith('/') ? url.substring(1) : url;
+  
+  // Ensure it includes uploads/proof/ as requested
+  if (!cleanPath.includes('uploads/proof/')) {
+    cleanPath = `uploads/proof/${cleanPath}`;
+  }
+  
+  return `${PROOF_DOMAIN}/${cleanPath}`;
 };
 
 const HandoverTimer = ({ start }: { start: string }) => {
@@ -49,6 +66,7 @@ export const LiveOrders: React.FC<LiveOrdersProps> = ({ isDarkMode, onUpdateStat
   const [fulfillmentOrder, setFulfillmentOrder] = useState<Order | null>(null);
   const [selectedChatOrder, setSelectedChatOrder] = useState<Order | null>(null);
   const prevOrderIds = useRef<Set<string>>(new Set());
+  const prevUnreadCounts = useRef<Record<string, number>>({});
 
   const fetchOrders = async () => {
     try {
@@ -63,6 +81,16 @@ export const LiveOrders: React.FC<LiveOrdersProps> = ({ isDarkMode, onUpdateStat
         const data = await response.json();
         if (Array.isArray(data)) {
           const currentIds = new Set(data.filter(o => o.status === OrderStatus.PENDING || o.status === OrderStatus.ARRIVED).map(o => o.id));
+          
+          // Check for new messages
+          data.forEach(order => {
+            const prevCount = prevUnreadCounts.current[order.id] || 0;
+            if (order.unreadCount > prevCount) {
+              playMessageSound();
+            }
+            prevUnreadCounts.current[order.id] = order.unreadCount || 0;
+          });
+
           prevOrderIds.current = currentIds;
           setOrders(data);
         } else {
@@ -381,10 +409,16 @@ export const LiveOrders: React.FC<LiveOrdersProps> = ({ isDarkMode, onUpdateStat
                       <div className="flex items-center justify-end gap-1.5">
                         <button
                           onClick={() => setSelectedChatOrder(order)}
-                          className={`p-1.5 rounded-lg transition-all ${isDarkMode ? 'bg-slate-800 text-indigo-400 hover:bg-slate-700' : 'bg-slate-100 text-indigo-500 hover:bg-slate-200'}`}
+                          className={`p-1.5 rounded-lg transition-all relative ${isDarkMode ? 'bg-slate-800 text-indigo-400 hover:bg-slate-700' : 'bg-slate-100 text-indigo-500 hover:bg-slate-200'}`}
                           title="Chat with Customer"
                         >
                           <MessageSquare size={14} />
+                          {order.unreadCount > 0 && (
+                            <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500 border border-white/20"></span>
+                            </span>
+                          )}
                         </button>
                         <button onClick={() => setSelectedOrder(order)} className={`p-1.5 rounded-lg transition-all ${isDarkMode ? 'bg-slate-800 text-slate-400 hover:text-white' : 'bg-slate-100 text-slate-500 hover:text-slate-900'}`}>
                           <ExternalLink size={14} />
@@ -467,6 +501,12 @@ export const LiveOrders: React.FC<LiveOrdersProps> = ({ isDarkMode, onUpdateStat
         <ChatModal
           order={selectedChatOrder}
           onClose={() => setSelectedChatOrder(null)}
+          onRead={() => {
+            setOrders(prev => prev.map(o => 
+              o.id === selectedChatOrder.id ? { ...o, unreadCount: 0 } : o
+            ));
+            prevUnreadCounts.current[selectedChatOrder.id] = 0;
+          }}
           isDarkMode={isDarkMode}
         />
       )}
@@ -737,7 +777,7 @@ export const OrderDetailsModal: React.FC<{
                     <div className="text-[8px] font-bold text-green-500 opacity-0 group-hover:opacity-100 transition-opacity uppercase tracking-widest">Click to enlarge</div>
                   </div>
                   <img
-                    src={order.paymentProofUrl.startsWith('http') ? order.paymentProofUrl : `https://webappapi.bezawcurbside.com${order.paymentProofUrl.startsWith('/') ? '' : '/'}${order.paymentProofUrl}`}
+                    src={getProofUrl(order.paymentProofUrl)}
                     alt="Payment Proof"
                     className="max-h-64 object-contain rounded-xl w-full"
                   />
@@ -757,7 +797,7 @@ export const OrderDetailsModal: React.FC<{
                 >
                   <div className="relative max-w-5xl w-full h-full flex items-center justify-center rounded-3xl overflow-hidden animate-in zoom-in-95 duration-200">
                     <img
-                      src={order.paymentProofUrl.startsWith('http') ? order.paymentProofUrl : `https://webappapi.bezawcurbside.com${order.paymentProofUrl.startsWith('/') ? '' : '/'}${order.paymentProofUrl}`}
+                      src={getProofUrl(order.paymentProofUrl)}
                       className="max-h-full max-w-full object-contain shadow-2xl rounded-lg"
                       alt="Full Payment Proof"
                     />

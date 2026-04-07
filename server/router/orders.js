@@ -81,7 +81,7 @@ router.get('/orders-get', authMiddleware, async (req, res) => {
             LEFT JOIN bundles bun ON oi.bundle_id::text = bun.id::text
             LEFT JOIN gifts g ON oi.gift_id::text = g.id::text
             LEFT JOIN branches b ON o.branch_id::text = b.id::text
-            WHERE 1=1
+            WHERE o.status != 'AWAITING_PAYMENT'
         `;
 
         const params = [];

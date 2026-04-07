@@ -3,42 +3,11 @@ import React, { useState, useEffect } from 'react';
 import { Landmark, Save, AlertCircle, CheckCircle2, Loader2, User, Building, Hash, ChevronDown, Eye, EyeOff, Plus, ArrowRight } from 'lucide-react';
 import { BASE_API_URL } from '../../constants';
 
-const ETHIOPIAN_BANKS = [
-    "Abay Bank S.C.",
-    "Abyssinia Bank S.C.",
-    "Ahadu Bank S.C.",
-    "Addis (International) Bank",
-    "Amhara Bank S.C.",
-    "Awash International Bank S.C.",
-    "Bank of Abyssinia S.C.",
-    "Berhan Bank S.C.",
-    "Bunna International Bank S.C.",
-    "Commercial Bank of Ethiopia (CBE)",
-    "Cooperative Bank of Oromia S.C.",
-    "Dashen Bank S.C.",
-    "Development Bank of Ethiopia",
-    "Enat Bank S.C.",
-    "Gadaa Bank S.C.",
-    "Global Bank S.C.",
-    "Goh Betoch Bank S.C.",
-    "Hibret Bank S.C.",
-    "Hijra Bank S.C.",
-    "Lion International Bank S.C.",
-    "National Bank of Ethiopia",
-    "Nib International Bank S.C.",
-    "OMO Bank S.C.",
-    "Oromia Bank S.C.",
-    "Rammis Bank S.C.",
-    "Shabelle Bank S.C.",
-    "Sidama Bank S.C.",
-    "Siinqee Bank S.C.",
-    "Siket Bank S.C.",
-    "Tsedey Bank S.C.",
-    "Tsehay Bank S.C.",
-    "Wegagen Bank S.C.",
-    "ZamZam Bank S.C.",
-    "Zemen Bank S.C."
-];
+interface BankOption {
+    name: string;
+    code: string;
+    acct_length?: number;
+}
 
 interface AddBankAccountProps {
     isDarkMode: boolean;
@@ -53,11 +22,16 @@ const AddBankAccount: React.FC<AddBankAccountProps> = ({ isDarkMode, user }) => 
     const [accounts, setAccounts] = useState<any[]>([]);
     const [showNumbers, setShowNumbers] = useState<Record<string, boolean>>({});
     const [isAddingNew, setIsAddingNew] = useState(false);
+    const [bankOptions, setBankOptions] = useState<BankOption[]>([]);
+    const [chapaSubaccounts, setChapaSubaccounts] = useState<any[]>([]);
+    const [isFetchingChapa, setIsFetchingChapa] = useState(false);
 
     const [formData, setFormData] = useState({
         account_name: '',
         account_number: '',
-        bank_name: ''
+        bank_name: '',
+        bank_code: '',
+        chapa_subaccount_id: ''
     });
 
     const fetchBankAccounts = async () => {
@@ -89,8 +63,40 @@ const AddBankAccount: React.FC<AddBankAccountProps> = ({ isDarkMode, user }) => 
         }
     };
 
+    const fetchBankOptions = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${BASE_API_URL}/api/bank/list`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.ok) {
+                setBankOptions(await response.json());
+            }
+        } catch (err) {
+            console.error('Failed to fetch bank options:', err);
+        }
+    };
+
+    const fetchChapaSubaccounts = async () => {
+        setIsFetchingChapa(true);
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${BASE_API_URL}/api/bank/chapa-list`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.ok) {
+                setChapaSubaccounts(await response.json());
+            }
+        } catch (err) {
+            console.error('Failed to fetch Chapa subaccounts:', err);
+        } finally {
+            setIsFetchingChapa(false);
+        }
+    };
+
     useEffect(() => {
         fetchBankAccounts();
+        fetchBankOptions();
     }, []);
 
     const toggleShowNumber = (id: string) => {
@@ -122,7 +128,7 @@ const AddBankAccount: React.FC<AddBankAccountProps> = ({ isDarkMode, user }) => 
             await fetchBankAccounts();
             setSuccess(true);
             setIsAddingNew(false);
-            setFormData({ account_name: '', account_number: '', bank_name: '' });
+            setFormData({ account_name: '', account_number: '', bank_name: '', bank_code: '' });
             setTimeout(() => setSuccess(false), 3000);
         } catch (err: any) {
             setError(err.message);
@@ -198,9 +204,15 @@ const AddBankAccount: React.FC<AddBankAccountProps> = ({ isDarkMode, user }) => 
                                             >
                                                 {showNumbers[account.id] ? <EyeOff size={16} /> : <Eye size={16} />}
                                             </button>
-                                            {account.is_primary && (
-                                                <div className="p-2 bg-emerald-500/10 rounded-lg">
-                                                    <CheckCircle2 className="text-emerald-500" size={16} />
+                                            {account.chapa_subaccount_id ? (
+                                                <div className="flex items-center gap-1.5 px-2 py-1 bg-emerald-500/10 rounded-lg">
+                                                    <CheckCircle2 className="text-emerald-500" size={12} />
+                                                    <span className="text-[8px] font-black text-emerald-500 uppercase tracking-tighter">Verified</span>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center gap-1.5 px-2 py-1 bg-amber-500/10 rounded-lg">
+                                                    <Loader2 className="text-amber-500 animate-spin" size={12} />
+                                                    <span className="text-[8px] font-black text-amber-500 uppercase tracking-tighter">Syncing...</span>
                                                 </div>
                                             )}
                                         </div>
@@ -272,68 +284,93 @@ const AddBankAccount: React.FC<AddBankAccountProps> = ({ isDarkMode, user }) => 
                                         </div>
                                     )}
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                        <div className="space-y-3 md:col-span-2">
-                                            <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Account Holder Name</label>
-                                            <div className="relative group">
-                                                <div className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${isDarkMode ? 'text-slate-500 group-focus-within:text-emerald-500' : 'text-slate-400 group-focus-within:text-emerald-600'}`}>
-                                                    <User size={18} />
+                                    <div className="space-y-6">
+                                        <div className="flex flex-col gap-6">
+                                            <div className="space-y-4">
+                                                <div className="flex items-center justify-between">
+                                                    <label className={`text-xs font-black uppercase tracking-wider ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                                                        Select Chapa Subaccount
+                                                    </label>
+                                                    <button 
+                                                        type="button"
+                                                        onClick={fetchChapaSubaccounts}
+                                                        disabled={isFetchingChapa}
+                                                        className="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white rounded-xl text-[10px] font-black transition-all shadow-lg shadow-emerald-500/20"
+                                                    >
+                                                        {isFetchingChapa ? <Loader2 size={12} className="animate-spin" /> : <Landmark size={12} />}
+                                                        GET FROM CHAPA
+                                                    </button>
                                                 </div>
-                                                <input
-                                                    type="text"
-                                                    required
-                                                    value={formData.account_name}
-                                                    onChange={(e) => setFormData({ ...formData, account_name: e.target.value })}
-                                                    placeholder="Full name as per bank record"
-                                                    className={`w-full pl-12 pr-4 py-4 rounded-2xl text-sm font-bold outline-none transition-all border-2 
-                                                        ${isDarkMode
-                                                            ? 'bg-[#14171c] border-slate-800 focus:border-emerald-500/30 focus:bg-[#1a1d23] text-white'
-                                                            : 'bg-slate-50 border-slate-100 focus:border-emerald-500/20 focus:bg-white text-slate-900'}`}
-                                                />
-                                            </div>
-                                        </div>
 
-                                        <div className="space-y-3">
-                                            <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Select Bank</label>
-                                            <div className="relative group">
-                                                <div className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${isDarkMode ? 'text-slate-500 group-focus-within:text-emerald-500' : 'text-slate-400 group-focus-within:text-emerald-600'}`}>
-                                                    <Building size={18} />
-                                                </div>
-                                                <select
-                                                    required
-                                                    value={formData.bank_name}
-                                                    onChange={(e) => setFormData({ ...formData, bank_name: e.target.value })}
-                                                    className={`w-full pl-12 pr-10 py-4 rounded-2xl text-sm font-bold outline-none transition-all border-2 appearance-none
-                                                        ${isDarkMode
-                                                            ? 'bg-[#14171c] border-slate-800 focus:border-emerald-500/30 focus:bg-[#1a1d23] text-white'
-                                                            : 'bg-slate-50 border-slate-100 focus:border-emerald-500/20 focus:bg-white text-slate-900'}`}
-                                                >
-                                                    <option value="" disabled>Choose provider</option>
-                                                    {ETHIOPIAN_BANKS.map((bank) => (
-                                                        <option key={bank} value={bank}>{bank}</option>
-                                                    ))}
-                                                </select>
-                                                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none" size={16} />
-                                            </div>
-                                        </div>
+                                                {/* Fetched List (The primary way to add) */}
+                                                {chapaSubaccounts.length > 0 ? (
+                                                    <div className={`grid grid-cols-1 gap-3 max-h-[350px] overflow-y-auto p-1 scrollbar-thin ${isDarkMode ? 'scrollbar-thumb-slate-800' : 'scrollbar-thumb-slate-200'}`}>
+                                                        {chapaSubaccounts.map(sub => (
+                                                            <div 
+                                                                key={sub.id} 
+                                                                onClick={() => setFormData({ 
+                                                                    ...formData, 
+                                                                    chapa_subaccount_id: sub.subaccount_id,
+                                                                    account_name: sub.account_name,
+                                                                    account_number: sub.account_number,
+                                                                    bank_name: sub.business_name
+                                                                })}
+                                                                className={`p-4 rounded-2xl border-2 transition-all cursor-pointer group
+                                                                    ${formData.chapa_subaccount_id === sub.subaccount_id 
+                                                                        ? 'border-emerald-500 bg-emerald-500/5' 
+                                                                        : isDarkMode ? 'border-slate-800 bg-[#14171c] hover:border-slate-700' : 'border-slate-100 bg-slate-50 hover:border-slate-200'}`}
+                                                            >
+                                                                <div className="flex items-start justify-between">
+                                                                    <div>
+                                                                        <div className="text-sm font-black text-emerald-500 mb-1">{sub.business_name}</div>
+                                                                        <div className={`text-[10px] font-bold ${isDarkMode ? 'text-slate-400' : 'text-slate-500'}`}>
+                                                                            {sub.account_name}
+                                                                        </div>
+                                                                        <div className={`text-[10px] font-mono mt-1 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                                                                            {sub.account_number}
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className={`px-2 py-1 rounded-lg text-[9px] font-black ${isDarkMode ? 'bg-slate-800 text-slate-500' : 'bg-white text-slate-400'}`}>
+                                                                        {sub.subaccount_id}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <div className={`p-12 rounded-3xl border-2 border-dashed flex flex-col items-center justify-center text-center
+                                                        ${isDarkMode ? 'border-slate-800 bg-[#14171c]' : 'border-slate-100 bg-slate-50'}`}>
+                                                        <Landmark size={32} className="text-slate-700 mb-3 opacity-20" />
+                                                        <p className={`text-xs font-bold leading-relaxed max-w-[200px] ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                                                            Click the button above to load your subaccounts from Chapa.
+                                                        </p>
+                                                    </div>
+                                                )}
 
-                                        <div className="space-y-3">
-                                            <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Account Number</label>
-                                            <div className="relative group">
-                                                <div className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${isDarkMode ? 'text-slate-500 group-focus-within:text-emerald-500' : 'text-slate-400 group-focus-within:text-emerald-600'}`}>
-                                                    <Hash size={18} />
+                                                {/* Manual ID Input (Safety Net) */}
+                                                <div className="space-y-3 mt-6 pt-6 border-t border-slate-100 dark:border-slate-800">
+                                                    <label className={`text-xs font-black uppercase tracking-wider ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`}>
+                                                        Manual Subaccount ID
+                                                    </label>
+                                                    <div className="relative">
+                                                        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-500">
+                                                            <CheckCircle2 size={18} />
+                                                        </div>
+                                                        <input
+                                                            type="text"
+                                                            value={formData.chapa_subaccount_id}
+                                                            onChange={(e) => setFormData({ ...formData, chapa_subaccount_id: e.target.value })}
+                                                            placeholder="Paste SUB_xxxx ID manually"
+                                                            className={`w-full pl-12 pr-4 py-4 rounded-2xl text-sm font-bold outline-none transition-all border-2 
+                                                                ${isDarkMode
+                                                                    ? 'bg-[#14171c] border-slate-800 focus:border-emerald-500/30 focus:bg-[#1a1d23] text-white'
+                                                                    : 'bg-slate-50 border-slate-100 focus:border-emerald-500/20 focus:bg-white text-slate-900'}`}
+                                                        />
+                                                    </div>
+                                                    <p className="text-[9px] font-bold text-slate-500 opacity-60">
+                                                        Note: You must have created this subaccount in the Chapa Dashboard first.
+                                                    </p>
                                                 </div>
-                                                <input
-                                                    type="text"
-                                                    required
-                                                    value={formData.account_number}
-                                                    onChange={(e) => setFormData({ ...formData, account_number: e.target.value })}
-                                                    placeholder="Enter numeric value"
-                                                    className={`w-full pl-12 pr-4 py-4 rounded-2xl text-sm font-bold outline-none transition-all border-2 
-                                                        ${isDarkMode
-                                                            ? 'bg-[#14171c] border-slate-800 focus:border-emerald-500/30 focus:bg-[#1a1d23] text-white'
-                                                            : 'bg-slate-50 border-slate-100 focus:border-emerald-500/20 focus:bg-white text-slate-900'}`}
-                                                />
                                             </div>
                                         </div>
                                     </div>
@@ -341,7 +378,7 @@ const AddBankAccount: React.FC<AddBankAccountProps> = ({ isDarkMode, user }) => 
                                     <div className="pt-6 border-t border-slate-800/10 dark:border-slate-800/50 flex justify-end">
                                         <button
                                             type="submit"
-                                            disabled={loading}
+                                            disabled={loading || !formData.chapa_subaccount_id}
                                             className="flex items-center gap-3 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-black px-8 py-4 rounded-2xl transition-all shadow-xl shadow-emerald-600/20 text-xs tracking-widest uppercase"
                                         >
                                             {loading ? <Loader2 size={18} className="animate-spin" /> : <><Plus size={18} /> Link Account</>}

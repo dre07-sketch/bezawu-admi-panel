@@ -57,7 +57,7 @@ router.post('/login', [
                 vendorId: manager.vendor_id,
                 businessType: manager.business_type
             },
-            process.env.JWT_SECRET || 'your_jwt_secret',
+            process.env.JWT_SECRET,
             { expiresIn: '4h' }
         );
 

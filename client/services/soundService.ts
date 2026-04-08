@@ -18,3 +18,11 @@ export const playNotificationSound = () => {
         audio.play().catch(err => console.error('[SoundService] Playback blocked:', err));
     }
 };
+export const playMessageSound = () => {
+    const isSoundEnabled = localStorage.getItem('soundAlerts') !== 'false';
+    if (!isSoundEnabled) return;
+
+    // Use a lighter sound for messages
+    const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3');
+    audio.play().catch(val => console.error('[SoundService] Message play blocked:', val));
+};

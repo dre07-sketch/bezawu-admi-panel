@@ -5,6 +5,7 @@ import { Order } from '../../types';
 interface ChatModalProps {
     order: Order;
     onClose: () => void;
+    onRead?: () => void;
     isDarkMode: boolean;
 }
 
@@ -16,12 +17,24 @@ interface Message {
     created_at: string;
 }
 
-const ChatModal: React.FC<ChatModalProps> = ({ order, onClose, isDarkMode }) => {
+const ChatModal: React.FC<ChatModalProps> = ({ order, onClose, onRead, isDarkMode }) => {
     const [messages, setMessages] = useState<Message[]>([]);
     const [newMessage, setNewMessage] = useState('');
     const [loading, setLoading] = useState(true);
     const [sending, setSending] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+
+    const markAsRead = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            await fetch(`https://branchapi.bezawcurbside.com/api/chat/${order.id}/read`, {
+                method: 'PATCH',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+        } catch (err) {
+            console.error('Failed to mark as read:', err);
+        }
+    };
 
     const fetchMessages = async () => {
         try {
@@ -32,6 +45,8 @@ const ChatModal: React.FC<ChatModalProps> = ({ order, onClose, isDarkMode }) => 
             if (response.ok) {
                 const data = await response.json();
                 setMessages(data);
+                markAsRead();
+                if (onRead) onRead();
             }
         } catch (err) {
             console.error('Failed to fetch messages:', err);

@@ -41,7 +41,7 @@ const allowedOrigins = [
     'http://localhost:5173',
     'https://branchportal.bezawcurbside.com',
     'https://branchapi.bezawcurbside.com',
-    'https://branch.ristestate.com'
+   
 ];
 
 // 2. Comprehensive CORS Middleware
@@ -68,9 +68,18 @@ app.use(cors({
 }));
 
 app.use(helmet({
-    contentSecurityPolicy: false, // Temporarily disable CSP if it conflicts heavily with local dev tools (Vite/React often need blobs/unsafe-eval)
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.tailwindcss.com"], // Tailwind for dev/dynamic
+            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+            fontSrc: ["'self'", "https://fonts.gstatic.com"],
+            imgSrc: ["'self'", "data:", "https://*"], // allow local and bezaw domains
+            connectSrc: ["'self'", "https://bzwappapi.bezawcurbside.com", "https://branchapi.bezawcurbside.com", "http://localhost:5000", "http://localhost:5002"],
+        },
+    },
     crossOriginResourcePolicy: { policy: "cross-origin" },
-    referrerPolicy: { policy: "no-referrer-when-downgrade" } // More compatible for local dev
+    referrerPolicy: { policy: "no-referrer-when-downgrade" }
 }));
 
 app.use(morgan('dev'));

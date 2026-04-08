@@ -5,6 +5,11 @@ const router = express.Router();
 const { query } = require('../connection/db');
 const authMiddleware = require('../middleware/auth');
 
+// Ensure is_read column exists
+query(`
+    ALTER TABLE order_chats ADD COLUMN IF NOT EXISTS is_read BOOLEAN DEFAULT FALSE;
+`).catch(err => console.error('[Schema] Failed to add is_read to order_chats:', err));
+
 // Get chat history for an order
 router.get('/:orderId', authMiddleware, async (req, res) => {
     try {

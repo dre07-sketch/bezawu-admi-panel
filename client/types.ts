@@ -8,6 +8,7 @@ export enum OrderStatus {
   ARRIVED = 'ARRIVED',
   COMPLETED = 'COMPLETED',
   CANCELLED = 'CANCELLED',
+  REJECTED = 'REJECTED',
   VERIFIED = 'VERIFIED',
   GIVEN = 'GIVEN'
 }
@@ -55,6 +56,7 @@ export interface Order {
   handoverTimeSeconds?: number | null;
   isGift: boolean;
   paymentProofUrl?: string | null;
+  unreadCount?: number;
 }
 
 export enum AuthStep {

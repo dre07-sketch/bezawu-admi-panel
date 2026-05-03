@@ -1,0 +1,36 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --animate-ping-slow: pingSlow 3s cubic-bezier(0, 0, 0.2, 1) infinite;
+
+  @keyframes pingSlow {
+    75%, 100% { transform: scale(1.5); opacity: 0; }
+  }
+}
+
+@layer base {
+  html {
+    font-size: 11px;
+  }
+  body {
+    @apply m-0 overflow-hidden h-screen w-screen bg-[#fdfaf6] text-[#1e293b];
+    font-family: 'Inter', sans-serif;
+  }
+}
+
+@layer components {
+  .glass-deep {
+    @apply bg-white/70 backdrop-blur-[40px] border border-white/80 shadow-[0_8px_32px_0_rgba(31,38,135,0.07)];
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar {
+    @apply w-1;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-black/5 rounded-full hover:bg-black/10;
+  }
+}

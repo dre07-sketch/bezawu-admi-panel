@@ -28,14 +28,25 @@ async function syncBankToChapa(bankAccountId) {
             throw new Error(`Please select a valid bank (No Chapa code found).`);
         }
 
-        // 3. Prepare Chapa API Request
+        // 3. Fetch Commission Rate for default split
+        let commissionRate = 0.07; // Default 7%
+        try {
+            const systemRes = await query("SELECT value FROM system WHERE name = 'commission_rate'");
+            if (systemRes.rows.length > 0) {
+                commissionRate = parseFloat(systemRes.rows[0].value) / 100;
+            }
+        } catch (e) {
+            console.warn('[Chapa Sync] Could not fetch commission_rate, using default 7%');
+        }
+
+        // 4. Prepare Chapa API Request
         const payload = JSON.stringify({
             business_name: bankAccount.account_name,
             account_name: bankAccount.account_name,
             bank_code: finalBankCode,
             account_number: bankAccount.account_number,
             split_type: "percentage",
-            split_value: 0.07 
+            split_value: commissionRate 
         });
 
         const options = {

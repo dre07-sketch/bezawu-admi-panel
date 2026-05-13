@@ -143,6 +143,11 @@ router.patch('/:id/status', [
     }
     const { id } = req.params;
     const { status } = req.body;
+    
+    const entryLog = `[Status Change] ${new Date().toISOString()} - Order: ${id}, New Status: ${status}\n`;
+    console.log(entryLog);
+    require('fs').appendFileSync(require('path').join(__dirname, '..', 'loyalty_debug.log'), entryLog);
+
     const { branchId, vendorId } = req.user;
 
     try {
@@ -219,7 +224,7 @@ router.patch('/:id/status', [
             }
         }
 
-        // ─── TRIGGER IN-APP NOTIFICATION ───
+        // ─── TRIGGER IN-APP NOTIFICATION & LOYALTY POINTS ───
         const customerId = authCheckResult.rows[0].customer_id;
         if (customerId) {
             let notifyTitle = '';
@@ -238,6 +243,56 @@ router.patch('/:id/status', [
             } else if (['COMPLETED', 'VERIFIED', 'GIVEN'].includes(upperStatus)) {
                 notifyTitle = 'Order Completed';
                 notifyMessage = `Your order ${id} has been handed over. Thank you!`;
+
+                // ── Award Loyalty Points: 1 point per 10 ETB ──────────────────
+                try {
+                    const orderData = result.rows[0];
+                    const rawPrice = orderData.total_price;
+                    const totalPrice = typeof rawPrice === 'string' 
+                        ? parseFloat(rawPrice.replace(/[^0-9.]/g, '')) 
+                        : parseFloat(rawPrice);
+                    
+                    const pointsAwarded = Math.floor(totalPrice / 10);
+                    const debugMsg = `[Loyalty Debug] ${new Date().toISOString()} - Order: ${id}, Customer: ${customerId}, TotalPrice: ${totalPrice}, Points: ${pointsAwarded}\n`;
+                    console.log(debugMsg);
+                    require('fs').appendFileSync(require('path').join(__dirname, '..', 'loyalty_debug.log'), debugMsg);
+                    
+                    if (pointsAwarded > 0) {
+                        // 1. Update sidecar table (used by some auth routes)
+                        const res1 = await query(`
+                            INSERT INTO customer_marketing (customer_id, loyalty_points) 
+                            VALUES ($1, $2) 
+                            ON CONFLICT (customer_id) 
+                            DO UPDATE SET loyalty_points = customer_marketing.loyalty_points + $2
+                        `, [customerId, pointsAwarded]);
+                        
+                        const log1 = `[Loyalty Debug] customer_marketing update result: ${res1.rowCount} rows\n`;
+                        console.log(log1);
+                        require('fs').appendFileSync(require('path').join(__dirname, '..', 'loyalty_debug.log'), log1);
+
+                        // 2. Update main customers table (used by /customers/loyalty and /customers/profile)
+                        const res2 = await query(`
+                            UPDATE customers 
+                            SET loyalty_points = COALESCE(loyalty_points, 0) + $1 
+                            WHERE id = $2
+                        `, [pointsAwarded, customerId]);
+                        
+                        const log2 = `[Loyalty Debug] customers update result: ${res2.rowCount} rows\n`;
+                        console.log(log2);
+                        require('fs').appendFileSync(require('path').join(__dirname, '..', 'loyalty_debug.log'), log2);
+                        
+                        await query(
+                            'INSERT INTO notifications (customer_id, order_id, title, message) VALUES ($1, $2, $3, $4)',
+                            [customerId, id, 'Loyalty points earned!', `You earned ${pointsAwarded} points for this order.`]
+                        );
+                    } else {
+                        const log3 = `[Loyalty Debug] No points awarded (totalPrice: ${totalPrice})\n`;
+                        console.log(log3);
+                        require('fs').appendFileSync(require('path').join(__dirname, '..', 'loyalty_debug.log'), log3);
+                    }
+                } catch (e) {
+                    console.error('[Loyalty] Award error:', e.message);
+                }
             }
 
             if (notifyTitle) {

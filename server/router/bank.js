@@ -17,9 +17,13 @@ const { check, validationResult } = require('express-validator');
         `).catch(() => {});
         // --- CLEANUP: Remove old/wrong entries ---
         await query(`DELETE FROM chapa_banks WHERE bank_name LIKE '%Commercial%' AND bank_code = '128'`).catch(() => {});
-        console.log('[DB] Chapa banks table verified and cleaned.');
+        
+        // --- MIGRATION: Ensure bank_accounts has chapa_subaccount_id ---
+        await query(`ALTER TABLE bank_accounts ADD COLUMN IF NOT EXISTS chapa_subaccount_id TEXT`).catch(() => {});
+        
+        console.log('[DB] Chapa banks table verified and bank_accounts schema updated.');
     } catch (e) {
-        console.error('[DB] Migration error (Table might already exist):', e.message);
+        console.error('[DB] Migration error:', e.message);
     }
 })();
 
@@ -133,6 +137,52 @@ router.get('/chapa-list', authMiddleware, async (req, res) => {
     }
 });
 
+// Fetch single subaccount detail from Chapa (Workaround: Fetch list and filter)
+router.get('/chapa/:id', authMiddleware, async (req, res) => {
+    try {
+        const https = require('https');
+        const subaccountId = req.params.id;
+        
+        const options = {
+            hostname: 'api.chapa.co',
+            port: 443,
+            path: '/v1/subaccount',
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${process.env.CHAPA_SECRET_KEY}` }
+        };
+
+        const result = await new Promise((resolve, reject) => {
+            const req_chapa = https.request(options, (res_chapa) => {
+                let data = '';
+                res_chapa.on('data', (chunk) => data += chunk);
+                res_chapa.on('end', () => {
+                    try {
+                        resolve(JSON.parse(data));
+                    } catch (e) {
+                        reject(new Error('Invalid JSON from Chapa'));
+                    }
+                });
+            });
+            req_chapa.on('error', (err) => reject(err));
+            req_chapa.end();
+        });
+
+        if (result.status === 'success' && Array.isArray(result.data)) {
+            const subaccount = result.data.find(s => s.subaccount_id === subaccountId);
+            if (subaccount) {
+                res.json(subaccount);
+            } else {
+                res.status(404).json({ message: 'Subaccount not found in your Chapa account' });
+            }
+        } else {
+            res.status(500).json({ message: 'Failed to retrieve subaccounts from Chapa' });
+        }
+    } catch (err) {
+        console.error('Error verifying Chapa subaccount:', err.message);
+        res.status(500).json({ message: 'Error connecting to Chapa' });
+    }
+});
+
 // Get bank account for a branch or vendor
 router.get('/', authMiddleware, async (req, res) => {
     try {
@@ -158,69 +208,21 @@ router.get('/', authMiddleware, async (req, res) => {
     }
 });
 
-// Add or Update bank account
+// Add or Update bank account (DISABLED: Managed by Super Admin for security)
+router.post('/', authMiddleware, async (req, res) => {
+    return res.status(403).json({ 
+        message: 'Bank account management is restricted. Please contact Tech5 (Super Admin) to update your settlement account.' 
+    });
+});
+
+/* Original logic moved to Super Admin Panel for security
 router.post('/', [
     authMiddleware,
     check('account_name', 'Account name is required').not().isEmpty(),
     check('account_number', 'Account number is required').not().isEmpty(),
     check('bank_name', 'Bank name is required').not().isEmpty()
 ], async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-    }
-
-    try {
-        const { branchId, vendorId } = req.user;
-        const { account_name, account_number, bank_name, bank_code, chapa_subaccount_id } = req.body;
-        const { syncBankToChapa } = require('../utils/chapaSync');
-
-        // Check if this specific account number already exists for this vendor/branch
-        const checkText = 'SELECT id FROM bank_accounts WHERE vendor_id::text = $1::text AND (branch_id::text = $2::text OR (branch_id IS NULL AND $2 IS NULL)) AND account_number = $3';
-        const checkResult = await query(checkText, [vendorId, branchId, account_number]);
-
-        let savedAccount;
-        if (checkResult.rows.length > 0) {
-            // Update
-            const updateText = `
-                UPDATE bank_accounts 
-                SET account_name = $1, account_number = $2, bank_name = $3, bank_code = $4, chapa_subaccount_id = COALESCE($5, chapa_subaccount_id)
-                WHERE id = $6
-                RETURNING *
-            `;
-            const result = await query(updateText, [account_name, account_number, bank_name, bank_code, chapa_subaccount_id, checkResult.rows[0].id]);
-            savedAccount = result.rows[0];
-        } else {
-            // Insert
-            const insertText = `
-                INSERT INTO bank_accounts (vendor_id, branch_id, account_name, account_number, bank_name, bank_code, chapa_subaccount_id, is_primary)
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-                RETURNING *
-            `;
-            const result = await query(insertText, [vendorId, branchId, account_name, account_number, bank_name, bank_code, chapa_subaccount_id, true]);
-            savedAccount = result.rows[0];
-        }
-
-        // --- THE CHAPA SYNC HOOK (Only run if no manual subaccount ID provided) ---
-        if (!chapa_subaccount_id) {
-            try {
-                const chapaId = await syncBankToChapa(savedAccount.id);
-                savedAccount.chapa_subaccount_id = chapaId;
-            } catch (chapaErr) {
-                console.error('⚠️ Chapa Sync Failed during bank account update:', chapaErr.message);
-            }
-        }
-
-        res.json(savedAccount);
-    } catch (err) {
-        console.error('[Bank API Error Details]:', {
-            message: err.message,
-            stack: err.stack,
-            body: req.body,
-            user: req.user
-        });
-        res.status(500).json({ message: 'Internal Server Error', detail: err.message });
-    }
+    // ... logic ...
 });
-
+*/
 module.exports = router;
